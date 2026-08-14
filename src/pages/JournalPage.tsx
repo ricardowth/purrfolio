@@ -3,7 +3,8 @@ import { useData } from '@/store/DataContext';
 import { ResourcePage } from '@/components/ResourcePage';
 import { AttachmentField, AttachmentGallery } from '@/components/AttachmentField';
 import { Badge, Field } from '@/components/ui';
-import { formatDate, relativeDays, titleCase, today } from '@/lib/format';
+import { useI18n } from '@/lib/i18n';
+import { today, useFormat } from '@/lib/format';
 import { stripMeta, type FormValues } from '@/lib/forms';
 import { JOURNAL_TAGS } from '@shared/schema.js';
 import type { JournalEntry } from '@shared/types';
@@ -12,6 +13,8 @@ type Values = FormValues<JournalEntry>;
 
 export default function JournalPage() {
   const { petId, forPet } = useData();
+  const { t, tEnum } = useI18n();
+  const { formatDate, relativeDays } = useFormat();
   const rows = [...forPet('journal')].sort((a, b) => b.date.localeCompare(a.date));
 
   const blank = (): Values => ({ petId, date: today(), title: '', text: '', tags: [], attachments: [] });
@@ -19,19 +22,19 @@ export default function JournalPage() {
   return (
     <ResourcePage<JournalEntry, Values>
       collection="journal"
-      title="Journal"
-      subtitle="Anything that doesn't fit a form: behaviour, litter tray, sleeping, a photo from a good day."
-      addLabel="Add entry"
+      title={t('journal.title')}
+      subtitle={t('journal.subtitle')}
+      addLabel={t('journal.add')}
       emptyIcon={BookOpen}
-      emptyTitle="Nothing written down yet"
-      emptyMessage="Small observations add up — they're often what a vet asks about first."
+      emptyTitle={t('journal.emptyTitle')}
+      emptyMessage={t('journal.emptyMessage')}
       rows={rows}
       describe={(row) => row.title || formatDate(row.date)}
       defaults={blank}
       toValues={stripMeta}
       columns={[
         {
-          header: 'Date',
+          header: t('common.date'),
           render: (row) => (
             <div className="whitespace-nowrap">
               <p>{formatDate(row.date)}</p>
@@ -40,7 +43,7 @@ export default function JournalPage() {
           ),
         },
         {
-          header: 'Entry',
+          header: t('journal.entry'),
           render: (row) => (
             <div className="max-w-xl">
               {row.title && <p className="font-medium text-stone-900 dark:text-stone-100">{row.title}</p>}
@@ -54,10 +57,10 @@ export default function JournalPage() {
           ),
         },
         {
-          header: 'Tags',
+          header: t('journal.tags'),
           render: (row) => (
             <span className="flex flex-wrap gap-1">
-              {row.tags.length === 0 ? '—' : row.tags.map((tag) => <Badge key={tag}>{titleCase(tag)}</Badge>)}
+              {row.tags.length === 0 ? '—' : row.tags.map((tag) => <Badge key={tag}>{tEnum('journalTag', tag)}</Badge>)}
             </span>
           ),
         },
@@ -65,15 +68,20 @@ export default function JournalPage() {
       renderForm={({ values, set, errors }) => (
         <>
           <div className="grid gap-4 sm:grid-cols-3">
-            <Field label="Date" error={errors.date}>
+            <Field label={t('common.date')} error={errors.date}>
               <input type="date" className="input" value={values.date} onChange={(e) => set({ date: e.target.value })} />
             </Field>
-            <Field label="Title" className="sm:col-span-2">
-              <input className="input" value={values.title} onChange={(e) => set({ title: e.target.value })} placeholder="Refused breakfast" />
+            <Field label={t('common.title')} className="sm:col-span-2">
+              <input
+                className="input"
+                value={values.title}
+                onChange={(e) => set({ title: e.target.value })}
+                placeholder={t('journal.titlePlaceholder')}
+              />
             </Field>
           </div>
 
-          <Field label="Tags">
+          <Field label={t('journal.tags')}>
             <div className="flex flex-wrap gap-2">
               {JOURNAL_TAGS.map((tag: string) => {
                 const active = values.tags.includes(tag);
@@ -88,17 +96,17 @@ export default function JournalPage() {
                         : 'badge cursor-pointer bg-stone-200 text-stone-700 hover:bg-stone-300 dark:bg-stone-800 dark:text-stone-300 dark:hover:bg-stone-700'
                     }
                   >
-                    {titleCase(tag)}
+                    {tEnum('journalTag', tag)}
                   </button>
                 );
               })}
             </div>
           </Field>
 
-          <Field label="What happened">
+          <Field label={t('journal.whatHappened')}>
             <textarea className="input min-h-32" value={values.text} onChange={(e) => set({ text: e.target.value })} />
           </Field>
-          <Field label="Photos">
+          <Field label={t('common.photos')}>
             <AttachmentField value={values.attachments} onChange={(attachments) => set({ attachments })} />
           </Field>
         </>

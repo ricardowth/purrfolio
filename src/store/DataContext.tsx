@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
-import { api } from '@/lib/api';
+import { api, apiMessage } from '@/lib/api';
+import { useI18n } from '@/lib/i18n';
 import { emptyDatabase } from '@shared/schema.js';
 import type { Contact, Database, CollectionName, Pet } from '@shared/types';
 
@@ -49,6 +50,7 @@ const DataContext = createContext<DataContextValue | null>(null);
 const SELECTED_PET_KEY = 'purrfolio.selectedPet';
 
 export function DataProvider({ children }: { children: ReactNode }) {
+  const i18n = useI18n();
   const [db, setDb] = useState<Database>(() => emptyDatabase() as Database);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -59,11 +61,11 @@ export function DataProvider({ children }: { children: ReactNode }) {
       setDb(await api.getData());
       setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load data');
+      setError(apiMessage(err, i18n, 'common.failedLoad'));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [i18n]);
 
   useEffect(() => {
     void reload();

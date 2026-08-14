@@ -58,6 +58,23 @@ an error if you haven't run `npm run build` first.
 | `npm run preview`    | Preview the built frontend with Vite's own static server  |
 | `npm run typecheck`  | TypeScript check with no build output                     |
 
+## Language
+
+The interface is available in **Portuguese (PT-PT)** and **English**. Portuguese is
+the default; use the PT/EN toggle in the header, or the Language card in
+**Settings**. Your choice is remembered in `localStorage`.
+
+Only the interface is translated. Records are stored identically in both
+languages — enum values such as `active` or `checkup` stay English in
+`data.json` and are translated for display — so switching language never
+rewrites your data, and a file exported in one language imports cleanly in the
+other. Dates, numbers and currency follow the selected language too
+(`pt-PT` / `en-GB`).
+
+To add or change wording, edit [src/lib/strings.ts](src/lib/strings.ts). The
+English catalogue defines the key type and the Portuguese one must implement it,
+so a missing translation is a compile error rather than a blank label.
+
 ## Configuration
 
 The only environment variable is `PORT`, which sets the API port (default
@@ -97,7 +114,9 @@ src/                React frontend
   pages/            One file per screen (dashboard, health, weight, …)
   components/       Shared UI, layout, form helpers
   store/            DataContext — loads and caches the database client-side
-  lib/              API client, formatting, derived values
+  lib/              API client, i18n, formatting, derived values
+    strings.ts      Every UI string, in PT-PT and English
+    i18n.tsx        Language provider, t()/tn()/tEnum() lookups
   anatomy/          Interactive cat-body diagram used for health issues
 server/             Express API
   index.js          App setup, routes, static hosting in production

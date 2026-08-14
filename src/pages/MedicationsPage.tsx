@@ -4,7 +4,8 @@ import { ResourcePage } from '@/components/ResourcePage';
 import { AttachmentField } from '@/components/AttachmentField';
 import { IssueChips, IssuePicker } from '@/components/IssueLinks';
 import { Badge, Checkbox, Field, Select } from '@/components/ui';
-import { formatDate, formatDateTime, formatMoney, titleCase, today } from '@/lib/format';
+import { useI18n } from '@/lib/i18n';
+import { today, useFormat } from '@/lib/format';
 import { isMedicationActive } from '@/lib/derive';
 import { numberOrNull, numberValue, stripMeta, type FormValues } from '@/lib/forms';
 import { MED_ROUTES } from '@shared/schema.js';
@@ -14,6 +15,8 @@ type Values = FormValues<Medication>;
 
 export default function MedicationsPage() {
   const { petId, forPet, save } = useData();
+  const { t, tEnum } = useI18n();
+  const { formatDate, formatDateTime, formatMoney } = useFormat();
 
   const rows = [...forPet('medications')].sort((a, b) => {
     const activeDelta = Number(isMedicationActive(b)) - Number(isMedicationActive(a));
@@ -50,12 +53,12 @@ export default function MedicationsPage() {
   return (
     <ResourcePage<Medication, Values>
       collection="medications"
-      title="Medications"
-      subtitle="What they're on, how much, and whether today's dose has been given."
-      addLabel="Add medication"
+      title={t('med.title')}
+      subtitle={t('med.subtitle')}
+      addLabel={t('med.add')}
       emptyIcon={Pill}
-      emptyTitle="No medications recorded"
-      emptyMessage="Add current and past prescriptions — current ones appear on the care sheet for sitters."
+      emptyTitle={t('med.emptyTitle')}
+      emptyMessage={t('med.emptyMessage')}
       rows={rows}
       describe={(row) => row.name}
       defaults={blank}
@@ -63,14 +66,19 @@ export default function MedicationsPage() {
       wideModal
       rowActions={(row) =>
         isMedicationActive(row) ? (
-          <button type="button" className="btn-subtle px-2 py-1 hover:text-emerald-600" onClick={() => void logDose(row)} title="Log a dose now">
+          <button
+            type="button"
+            className="btn-subtle px-2 py-1 hover:text-emerald-600"
+            onClick={() => void logDose(row)}
+            title={t('med.logDose')}
+          >
             <CheckCircle2 className="size-4" />
           </button>
         ) : null
       }
       columns={[
         {
-          header: 'Medication',
+          header: t('med.medication'),
           render: (row) => (
             <div>
               <p className="font-medium text-stone-900 dark:text-stone-100">{row.name}</p>
@@ -79,56 +87,75 @@ export default function MedicationsPage() {
           ),
         },
         {
-          header: 'Dose',
+          header: t('med.dose'),
           render: (row) => (
             <div>
               <p>{row.dose || '—'}</p>
-              <p className="text-xs text-stone-500">
-                {[titleCase(row.route), row.frequency].filter(Boolean).join(' · ') || '—'}
-              </p>
+              <p className="text-xs text-stone-500">{[tEnum('medRoute', row.route), row.frequency].filter(Boolean).join(' · ') || '—'}</p>
             </div>
           ),
         },
         {
-          header: 'Status',
-          render: (row) => (isMedicationActive(row) ? <Badge tone="green">Active</Badge> : <Badge tone="neutral">Finished</Badge>),
+          header: t('common.status'),
+          render: (row) =>
+            isMedicationActive(row) ? <Badge tone="green">{t('med.active')}</Badge> : <Badge tone="neutral">{t('med.finished')}</Badge>,
         },
         {
-          header: 'Period',
+          header: t('common.period'),
           render: (row) => (
             <span className="text-stone-600 dark:text-stone-400">
-              {formatDate(row.startDate)} → {row.ongoing ? 'ongoing' : formatDate(row.endDate)}
+              {formatDate(row.startDate)} → {row.ongoing ? t('common.ongoing') : formatDate(row.endDate)}
             </span>
           ),
         },
         {
-          header: 'Last dose',
+          header: t('med.lastDose'),
           render: (row) =>
             row.doseLog.length ? (
-              <span title={`${row.doseLog.length} logged`}>{formatDateTime(row.doseLog[row.doseLog.length - 1].at)}</span>
+              <span title={t('med.loggedCount', { n: row.doseLog.length })}>{formatDateTime(row.doseLog[row.doseLog.length - 1].at)}</span>
             ) : (
               '—'
             ),
         },
-        { header: 'Issues', render: (row) => <IssueChips ids={row.issueIds} /> },
-        { header: 'Cost', render: (row) => formatMoney(row.cost) },
+        { header: t('common.issues'), render: (row) => <IssueChips ids={row.issueIds} /> },
+        { header: t('common.cost'), render: (row) => formatMoney(row.cost) },
       ]}
       renderForm={({ values, set, errors }) => (
         <>
           <div className="grid gap-4 sm:grid-cols-3">
-            <Field label="Name" error={errors.name} className="sm:col-span-2">
-              <input className="input" value={values.name} onChange={(e) => set({ name: e.target.value })} placeholder="Metacam 0.5 mg/ml" />
+            <Field label={t('common.name')} error={errors.name} className="sm:col-span-2">
+              <input
+                className="input"
+                value={values.name}
+                onChange={(e) => set({ name: e.target.value })}
+                placeholder={t('med.namePlaceholder')}
+              />
             </Field>
-            <Field label="Route">
-              <Select options={MED_ROUTES} value={values.route} onChange={(e) => set({ route: e.target.value as Values['route'] })} />
+            <Field label={t('med.route')}>
+              <Select
+                options={MED_ROUTES}
+                group="medRoute"
+                value={values.route}
+                onChange={(e) => set({ route: e.target.value as Values['route'] })}
+              />
             </Field>
-            <Field label="Dose" hint="Exactly as written on the label.">
-              <input className="input" value={values.dose} onChange={(e) => set({ dose: e.target.value })} placeholder="0.5 ml" />
+            <Field label={t('med.dose')} hint={t('med.doseHint')}>
+              <input
+                className="input"
+                value={values.dose}
+                onChange={(e) => set({ dose: e.target.value })}
+                placeholder={t('med.dosePlaceholder')}
+              />
             </Field>
-            <Field label="Frequency">
-              <input className="input" value={values.frequency} onChange={(e) => set({ frequency: e.target.value })} placeholder="once daily with food" />
+            <Field label={t('med.frequency')}>
+              <input
+                className="input"
+                value={values.frequency}
+                onChange={(e) => set({ frequency: e.target.value })}
+                placeholder={t('med.frequencyPlaceholder')}
+              />
             </Field>
-            <Field label="Times per day">
+            <Field label={t('med.timesPerDay')}>
               <input
                 type="number"
                 min="1"
@@ -137,10 +164,10 @@ export default function MedicationsPage() {
                 onChange={(e) => set({ timesPerDay: numberOrNull(e.target.value) })}
               />
             </Field>
-            <Field label="Start date">
+            <Field label={t('common.startDate')}>
               <input type="date" className="input" value={values.startDate} onChange={(e) => set({ startDate: e.target.value })} />
             </Field>
-            <Field label="End date">
+            <Field label={t('common.endDate')}>
               <input
                 type="date"
                 className="input"
@@ -149,7 +176,7 @@ export default function MedicationsPage() {
                 onChange={(e) => set({ endDate: e.target.value })}
               />
             </Field>
-            <Field label="Cost (€)">
+            <Field label={t('common.costEur')}>
               <input
                 type="number"
                 step="0.01"
@@ -159,28 +186,32 @@ export default function MedicationsPage() {
                 onChange={(e) => set({ cost: numberOrNull(e.target.value) })}
               />
             </Field>
-            <Field label="Prescribed by" className="sm:col-span-2">
+            <Field label={t('med.prescribedBy')} className="sm:col-span-2">
               <input className="input" value={values.prescribedBy} onChange={(e) => set({ prescribedBy: e.target.value })} />
             </Field>
           </div>
 
-          <Checkbox label="Ongoing — no planned end date" checked={values.ongoing} onChange={(ongoing) => set({ ongoing, endDate: ongoing ? '' : values.endDate })} />
+          <Checkbox
+            label={t('med.ongoingLabel')}
+            checked={values.ongoing}
+            onChange={(ongoing) => set({ ongoing, endDate: ongoing ? '' : values.endDate })}
+          />
 
-          <Field label="What it's for">
+          <Field label={t('med.whatFor')}>
             <textarea className="input min-h-16" value={values.reason} onChange={(e) => set({ reason: e.target.value })} />
           </Field>
-          <Field label="Related health issues">
+          <Field label={t('common.relatedIssues')}>
             <IssuePicker value={values.issueIds} onChange={(issueIds) => set({ issueIds })} />
           </Field>
-          <Field label="Notes">
+          <Field label={t('common.notes')}>
             <textarea className="input min-h-16" value={values.notes} onChange={(e) => set({ notes: e.target.value })} />
           </Field>
-          <Field label="Attachments">
+          <Field label={t('common.attachments')}>
             <AttachmentField value={values.attachments} onChange={(attachments) => set({ attachments })} />
           </Field>
 
           {values.doseLog.length > 0 && (
-            <Field label={`Dose log (${values.doseLog.length})`}>
+            <Field label={t('med.doseLog', { n: values.doseLog.length })}>
               <div className="max-h-40 space-y-1 overflow-y-auto rounded-lg border border-stone-200 p-2 text-sm dark:border-stone-700">
                 {[...values.doseLog].reverse().map((entry) => (
                   <div key={entry.id} className="flex items-center justify-between gap-2">
@@ -190,7 +221,7 @@ export default function MedicationsPage() {
                       className="btn-subtle px-2 py-0.5 text-xs hover:text-red-600"
                       onClick={() => set({ doseLog: values.doseLog.filter((item) => item.id !== entry.id) })}
                     >
-                      Remove
+                      {t('common.remove')}
                     </button>
                   </div>
                 ))}

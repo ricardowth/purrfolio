@@ -1,5 +1,16 @@
 import { Fragment, useMemo, useState } from 'react';
-import { REGIONS, SILHOUETTE, TAIL_PATH, VIEW_BOX, describePart, type Region, type Shape } from '@/anatomy/regions';
+import {
+  REGIONS,
+  REGIONS_BY_ID,
+  SILHOUETTE,
+  TAIL_PATH,
+  VIEW_BOX,
+  describePart,
+  regionLabel,
+  type Region,
+  type Shape,
+} from '@/anatomy/regions';
+import { useI18n } from '@/lib/i18n';
 import { cx } from '@/components/ui';
 import type { Issue, Severity, Side } from '@shared/types';
 
@@ -67,9 +78,17 @@ interface CatBodyProps {
   selected?: PartSelection | null;
   onSelect?: (selection: PartSelection) => void;
   className?: string;
+  /**
+   * Also list open issues recorded against parts the diagram cannot draw
+   * ('General / whole body', 'Behaviour & mood'), which would otherwise be
+   * invisible here however serious they are.
+   */
+  showOffDiagram?: boolean;
 }
 
-export function CatBody({ issues, viewSide, showInternal, selected, onSelect, className }: CatBodyProps) {
+export function CatBody({ issues, viewSide, showInternal, selected, onSelect, className, showOffDiagram }: CatBodyProps) {
+  const i18n = useI18n();
+  const { t, tn } = i18n;
   const states = useMemo(() => summarise(issues), [issues]);
   const [hovered, setHovered] = useState<PartSelection | null>(null);
 
@@ -123,9 +142,9 @@ export function CatBody({ issues, viewSide, showInternal, selected, onSelect, cl
         onMouseLeave={() => setHovered(null)}
       >
         <title>
-          {describePart(region.id, side)}
-          {state.activeCount ? ` — ${state.activeCount} active issue${state.activeCount === 1 ? '' : 's'}` : ''}
-          {state.resolvedCount ? ` — ${state.resolvedCount} resolved` : ''}
+          {describePart(i18n, region.id, side)}
+          {state.activeCount ? ` — ${tn('body.titleActive', state.activeCount)}` : ''}
+          {state.resolvedCount ? ` — ${t('body.titleResolved', { n: state.resolvedCount })}` : ''}
         </title>
       </ShapeEl>
     );
@@ -134,9 +153,13 @@ export function CatBody({ issues, viewSide, showInternal, selected, onSelect, cl
   const caption = hovered ?? selected ?? null;
   const captionState = caption ? (states.get(keyOf(caption.bodyPart, caption.side)) ?? EMPTY_STATE) : null;
 
+  const offDiagram = showOffDiagram
+    ? issues.filter((issue) => issue.status !== 'resolved' && (REGIONS_BY_ID.get(issue.bodyPart)?.shapes.length ?? 0) === 0)
+    : [];
+
   return (
     <div className={className}>
-      <svg viewBox={VIEW_BOX} className="w-full" role="img" aria-label="Cat body map">
+      <svg viewBox={VIEW_BOX} className="w-full" role="img" aria-label={t('body.ariaLabel')}>
         {/* Far-side limbs sit behind the body and are drawn faded. */}
         <g opacity={0.55}>
           {limbs.flatMap((region) =>
@@ -183,34 +206,50 @@ export function CatBody({ issues, viewSide, showInternal, selected, onSelect, cl
       <p className="mt-1 min-h-5 text-center text-sm text-stone-600 dark:text-stone-400">
         {caption && captionState ? (
           <>
-            <span className="font-medium text-stone-800 dark:text-stone-200">{describePart(caption.bodyPart, caption.side)}</span>
-            {captionState.activeCount > 0 && <> · {captionState.activeCount} active</>}
-            {captionState.resolvedCount > 0 && <> · {captionState.resolvedCount} resolved</>}
-            {captionState.activeCount === 0 && captionState.resolvedCount === 0 && <> · nothing recorded</>}
+            <span className="font-medium text-stone-800 dark:text-stone-200">{describePart(i18n, caption.bodyPart, caption.side)}</span>
+            {captionState.activeCount > 0 && <> · {t('body.activeCount', { n: captionState.activeCount })}</>}
+            {captionState.resolvedCount > 0 && <> · {t('body.resolvedCount', { n: captionState.resolvedCount })}</>}
+            {captionState.activeCount === 0 && captionState.resolvedCount === 0 && <> · {t('body.nothingRecorded')}</>}
           </>
         ) : (
-          <span className="text-stone-400 dark:text-stone-500">Hover a body part to inspect it</span>
+          <span className="text-stone-400 dark:text-stone-500">{t('body.hoverHint')}</span>
         )}
       </p>
+
+      {offDiagram.length > 0 && (
+        <div className="mt-2 rounded-lg border border-dashed border-stone-300 px-3 py-2 dark:border-stone-700">
+          <p className="mb-1.5 text-[11px] font-semibold tracking-wide text-stone-400 uppercase">{t('body.offDiagram')}</p>
+          <ul className="space-y-1 text-sm">
+            {offDiagram.map((issue) => (
+              <li key={issue.id} className="flex items-center gap-2">
+                <span className="size-2 shrink-0 rounded-full" style={{ background: SEVERITY_FILL[issue.severity] }} />
+                <span className="truncate text-stone-700 dark:text-stone-300">{issue.title}</span>
+                <span className="ml-auto shrink-0 text-xs text-stone-500">{regionLabel(i18n, issue.bodyPart)}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </div>
   );
 }
 
 export function SeverityLegend() {
-  const entries: [string, string][] = [
-    ['No issues', 'transparent'],
-    ['Low', SEVERITY_FILL.low],
-    ['Medium', SEVERITY_FILL.medium],
-    ['High', SEVERITY_FILL.high],
-    ['Resolved', RESOLVED_COLOUR],
+  const { t } = useI18n();
+  const entries: [string, string, boolean][] = [
+    [t('body.legendNone'), 'transparent', false],
+    [t('body.legendLow'), SEVERITY_FILL.low, false],
+    [t('body.legendMedium'), SEVERITY_FILL.medium, false],
+    [t('body.legendHigh'), SEVERITY_FILL.high, false],
+    [t('body.legendResolved'), RESOLVED_COLOUR, true],
   ];
   return (
     <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-xs text-stone-500 dark:text-stone-400">
-      {entries.map(([label, colour]) => (
+      {entries.map(([label, colour, faded]) => (
         <span key={label} className="inline-flex items-center gap-1.5">
           <span
             className="size-3 rounded-full border border-stone-300 dark:border-stone-600"
-            style={{ background: colour === 'transparent' ? 'transparent' : colour, opacity: label === 'Resolved' ? 0.4 : 0.75 }}
+            style={{ background: colour === 'transparent' ? 'transparent' : colour, opacity: faded ? 0.4 : 0.75 }}
           />
           {label}
         </span>

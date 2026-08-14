@@ -1,3 +1,6 @@
+import type { I18n } from '@/lib/i18n';
+import { PT_REGION_GENDER, type StringKey } from '@/lib/strings';
+
 /**
  * The cat body map.
  *
@@ -45,8 +48,8 @@ export type Shape =
 export type RegionGroup = 'head' | 'body' | 'limbs' | 'internal' | 'general';
 
 export interface Region {
+  /** Also the translation key suffix: `region.<id>` in the string catalogue. */
   id: string;
-  label: string;
   group: RegionGroup;
   /** Left/right matters for this part, so issues on it record a side. */
   sided?: boolean;
@@ -76,13 +79,12 @@ const nearFar = (d: string, offset: [number, number]): Shape[] => [
 export const REGIONS: Region[] = [
   // Whole-body catch-all. First in the list, so it sits underneath everything
   // and only receives clicks on bare torso.
-  { id: 'coat', label: 'Coat & skin', group: 'body', shapes: [{ kind: 'path', d: SILHOUETTE, layer: 'flat' }] },
+  { id: 'coat', group: 'body', shapes: [{ kind: 'path', d: SILHOUETTE, layer: 'flat' }] },
 
   // --- head ---
-  { id: 'head', label: 'Head', group: 'head', shapes: [ellipse(86, 96, 44, 38)] },
+  { id: 'head', group: 'head', shapes: [ellipse(86, 96, 44, 38)] },
   {
     id: 'ear',
-    label: 'Ear',
     group: 'head',
     sided: true,
     shapes: [
@@ -90,47 +92,59 @@ export const REGIONS: Region[] = [
       { kind: 'path', d: 'M 96,40 L 110,74 L 80,60 Z', layer: 'far' },
     ],
   },
-  { id: 'eye', label: 'Eye', group: 'head', sided: true, shapes: [ellipse(67, 91, 10, 8, { layer: 'near' })] },
-  { id: 'nose', label: 'Nose', group: 'head', shapes: [ellipse(45, 100, 9, 7)] },
-  { id: 'mouth', label: 'Mouth & teeth', group: 'head', shapes: [ellipse(52, 113, 15, 11)] },
-  { id: 'neck', label: 'Neck & throat', group: 'head', shapes: [ellipse(124, 122, 24, 22)] },
+  { id: 'eye', group: 'head', sided: true, shapes: [ellipse(67, 91, 10, 8, { layer: 'near' })] },
+  { id: 'nose', group: 'head', shapes: [ellipse(45, 100, 9, 7)] },
+  { id: 'mouth', group: 'head', shapes: [ellipse(52, 113, 15, 11)] },
+  { id: 'neck', group: 'head', shapes: [ellipse(124, 122, 24, 22)] },
 
   // --- torso ---
-  { id: 'back', label: 'Back & spine', group: 'body', shapes: [ellipse(212, 106, 80, 17, { rotate: -2 })] },
-  { id: 'chest', label: 'Chest', group: 'body', shapes: [ellipse(128, 159, 31, 27)] },
-  { id: 'abdomen', label: 'Abdomen', group: 'body', shapes: [ellipse(212, 168, 58, 21)] },
-  { id: 'hips', label: 'Hips', group: 'body', shapes: [ellipse(296, 130, 27, 25)] },
-  { id: 'tail', label: 'Tail', group: 'body', shapes: [{ kind: 'path', d: TAIL_PATH, layer: 'flat' }] },
+  { id: 'back', group: 'body', shapes: [ellipse(212, 106, 80, 17, { rotate: -2 })] },
+  { id: 'chest', group: 'body', shapes: [ellipse(128, 159, 31, 27)] },
+  { id: 'abdomen', group: 'body', shapes: [ellipse(212, 168, 58, 21)] },
+  { id: 'hips', group: 'body', shapes: [ellipse(296, 130, 27, 25)] },
+  { id: 'tail', group: 'body', shapes: [{ kind: 'path', d: TAIL_PATH, layer: 'flat' }] },
 
   // --- limbs ---
-  { id: 'front-leg-upper', label: 'Front leg (upper)', group: 'limbs', sided: true, shapes: nearFar(FRONT_UPPER, FRONT_FAR) },
-  { id: 'front-leg-lower', label: 'Front leg (lower)', group: 'limbs', sided: true, shapes: nearFar(FRONT_LOWER, FRONT_FAR) },
-  { id: 'front-paw', label: 'Front paw', group: 'limbs', sided: true, shapes: nearFar(FRONT_PAW, FRONT_FAR) },
-  { id: 'hind-leg-upper', label: 'Hind leg (thigh)', group: 'limbs', sided: true, shapes: nearFar(HIND_UPPER, HIND_FAR) },
-  { id: 'hind-leg-lower', label: 'Hind leg (lower)', group: 'limbs', sided: true, shapes: nearFar(HIND_LOWER, HIND_FAR) },
-  { id: 'hind-paw', label: 'Hind paw', group: 'limbs', sided: true, shapes: nearFar(HIND_PAW, HIND_FAR) },
+  { id: 'front-leg-upper', group: 'limbs', sided: true, shapes: nearFar(FRONT_UPPER, FRONT_FAR) },
+  { id: 'front-leg-lower', group: 'limbs', sided: true, shapes: nearFar(FRONT_LOWER, FRONT_FAR) },
+  { id: 'front-paw', group: 'limbs', sided: true, shapes: nearFar(FRONT_PAW, FRONT_FAR) },
+  { id: 'hind-leg-upper', group: 'limbs', sided: true, shapes: nearFar(HIND_UPPER, HIND_FAR) },
+  { id: 'hind-leg-lower', group: 'limbs', sided: true, shapes: nearFar(HIND_LOWER, HIND_FAR) },
+  { id: 'hind-paw', group: 'limbs', sided: true, shapes: nearFar(HIND_PAW, HIND_FAR) },
 
   // --- internal, shown only with the organ overlay ---
-  { id: 'lungs', label: 'Lungs', group: 'internal', internal: true, shapes: [ellipse(174, 126, 30, 20)] },
-  { id: 'heart', label: 'Heart', group: 'internal', internal: true, shapes: [ellipse(150, 140, 16, 14)] },
-  { id: 'liver', label: 'Liver', group: 'internal', internal: true, shapes: [ellipse(188, 154, 20, 15)] },
-  { id: 'stomach', label: 'Stomach', group: 'internal', internal: true, shapes: [ellipse(212, 140, 23, 17)] },
-  { id: 'intestines', label: 'Intestines', group: 'internal', internal: true, shapes: [ellipse(240, 164, 31, 17)] },
-  { id: 'kidney', label: 'Kidney', group: 'internal', internal: true, sided: true, shapes: [ellipse(264, 126, 14, 11)] },
-  { id: 'bladder', label: 'Bladder', group: 'internal', internal: true, shapes: [ellipse(284, 172, 14, 12)] },
+  { id: 'lungs', group: 'internal', internal: true, shapes: [ellipse(174, 126, 30, 20)] },
+  { id: 'heart', group: 'internal', internal: true, shapes: [ellipse(150, 140, 16, 14)] },
+  { id: 'liver', group: 'internal', internal: true, shapes: [ellipse(188, 154, 20, 15)] },
+  { id: 'stomach', group: 'internal', internal: true, shapes: [ellipse(212, 140, 23, 17)] },
+  { id: 'intestines', group: 'internal', internal: true, shapes: [ellipse(240, 164, 31, 17)] },
+  { id: 'kidney', group: 'internal', internal: true, sided: true, shapes: [ellipse(264, 126, 14, 11)] },
+  { id: 'bladder', group: 'internal', internal: true, shapes: [ellipse(284, 172, 14, 12)] },
 
   // --- not on the diagram ---
-  { id: 'general', label: 'General / whole body', group: 'general', shapes: [] },
-  { id: 'behaviour', label: 'Behaviour & mood', group: 'general', shapes: [] },
+  { id: 'general', group: 'general', shapes: [] },
+  { id: 'behaviour', group: 'general', shapes: [] },
 ];
 
 export const REGIONS_BY_ID = new Map(REGIONS.map((region) => [region.id, region]));
 
-export const regionLabel = (id: string) => REGIONS_BY_ID.get(id)?.label ?? id;
+export const regionLabel = ({ t }: I18n, id: string) => (REGIONS_BY_ID.has(id) ? t(`region.${id}` as StringKey) : id);
 
-/** 'front-paw' + 'left' -> 'Left front paw'. */
-export function describePart(bodyPart: string, side: string): string {
-  const label = regionLabel(bodyPart);
+/**
+ * 'front-paw' + 'left' -> 'Left front paw' / 'Pata dianteira esquerda'.
+ *
+ * The two languages disagree on both word order and agreement: English puts the
+ * side first, Portuguese puts it last and inflects it to match the noun's gender.
+ */
+export function describePart(i18n: I18n, bodyPart: string, side: string): string {
+  const label = regionLabel(i18n, bodyPart);
   if (side !== 'left' && side !== 'right') return label;
+
+  if (i18n.lang === 'pt') {
+    const feminine = PT_REGION_GENDER[bodyPart] === 'f';
+    const adjective = side === 'left' ? (feminine ? 'esquerda' : 'esquerdo') : feminine ? 'direita' : 'direito';
+    return `${label} ${adjective}`;
+  }
+
   return `${side === 'left' ? 'Left' : 'Right'} ${label.charAt(0).toLowerCase()}${label.slice(1)}`;
 }

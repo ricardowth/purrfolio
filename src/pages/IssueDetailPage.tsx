@@ -7,12 +7,14 @@ import { describePart, REGIONS_BY_ID } from '@/anatomy/regions';
 import { IssueEditor } from '@/components/IssueEditor';
 import { AttachmentField, AttachmentGallery } from '@/components/AttachmentField';
 import { Badge, ConfirmDialog, EmptyState, Field, ISSUE_STATUS_TONE, SEVERITY_TONE } from '@/components/ui';
-import { formatDate, formatDateTime, relativeDays, titleCase, today } from '@/lib/format';
+import { useI18n } from '@/lib/i18n';
+import { today, useFormat } from '@/lib/format';
 import { stripMeta } from '@/lib/forms';
 import type { Attachment, Issue } from '@shared/types';
 
 function UpdateComposer({ issue }: { issue: Issue }) {
   const { save } = useData();
+  const { t } = useI18n();
   const [open, setOpen] = useState(false);
   const [date, setDate] = useState(today());
   const [note, setNote] = useState('');
@@ -40,7 +42,7 @@ function UpdateComposer({ issue }: { issue: Issue }) {
     return (
       <button type="button" className="btn-ghost w-full" onClick={() => setOpen(true)}>
         <Plus className="size-4" />
-        Add a progress update
+        {t('issueDetail.addUpdate')}
       </button>
     );
   }
@@ -48,28 +50,28 @@ function UpdateComposer({ issue }: { issue: Issue }) {
   return (
     <div className="card space-y-3 p-4">
       <div className="grid gap-3 sm:grid-cols-4">
-        <Field label="Date">
+        <Field label={t('common.date')}>
           <input type="date" className="input" value={date} onChange={(e) => setDate(e.target.value)} />
         </Field>
-        <Field label="What changed" className="sm:col-span-3">
+        <Field label={t('issueDetail.whatChanged')} className="sm:col-span-3">
           <textarea
             className="input min-h-20"
             value={note}
             onChange={(e) => setNote(e.target.value)}
-            placeholder="Swelling looks smaller, walking normally on it again."
+            placeholder={t('issueDetail.updatePlaceholder')}
             autoFocus
           />
         </Field>
       </div>
-      <Field label="Photos">
+      <Field label={t('common.photos')}>
         <AttachmentField value={attachments} onChange={setAttachments} />
       </Field>
       <div className="flex justify-end gap-2">
         <button type="button" className="btn-ghost" onClick={() => setOpen(false)}>
-          Cancel
+          {t('common.cancel')}
         </button>
         <button type="button" className="btn-primary" onClick={() => void submit()} disabled={saving}>
-          {saving ? 'Saving…' : 'Add update'}
+          {saving ? t('common.saving') : t('issueDetail.addUpdateAction')}
         </button>
       </div>
     </div>
@@ -80,6 +82,9 @@ export default function IssueDetailPage() {
   const { issueId } = useParams();
   const navigate = useNavigate();
   const { db, forPet, save, remove } = useData();
+  const i18n = useI18n();
+  const { t, tEnum } = i18n;
+  const { formatDate, formatDateTime, relativeDays } = useFormat();
 
   const [editing, setEditing] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -90,11 +95,11 @@ export default function IssueDetailPage() {
   if (!issue) {
     return (
       <EmptyState
-        title="Issue not found"
-        message="It may have been deleted."
+        title={t('issueDetail.notFound')}
+        message={t('issueDetail.notFoundMessage')}
         action={
           <Link to="/health" className="btn-primary">
-            Back to the health map
+            {t('issueDetail.backToMap')}
           </Link>
         }
       />
@@ -116,33 +121,40 @@ export default function IssueDetailPage() {
     });
   }
 
+  const [beforeLink, afterLink] = t('issueDetail.noAppointments').split('{link}');
+
   return (
     <>
       <button type="button" onClick={() => navigate('/health')} className="btn-subtle mb-3 -ml-2 px-2">
         <ArrowLeft className="size-4" />
-        Health map
+        {t('health.title')}
       </button>
 
       <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-stone-900 dark:text-stone-50">{issue.title}</h1>
           <p className="mt-1 text-sm text-stone-500">
-            {describePart(issue.bodyPart, issue.side)} · first noticed {formatDate(issue.onsetDate)} ({relativeDays(issue.onsetDate)})
-            {issue.status === 'resolved' && issue.resolvedDate && ` · resolved ${formatDate(issue.resolvedDate)}`}
+            {describePart(i18n, issue.bodyPart, issue.side)} ·{' '}
+            {t('issueDetail.firstNoticed', { date: formatDate(issue.onsetDate), rel: relativeDays(issue.onsetDate) })}
+            {issue.status === 'resolved' &&
+              issue.resolvedDate &&
+              t('issueDetail.resolvedOn', { date: formatDate(issue.resolvedDate) })}
           </p>
           <div className="mt-2 flex flex-wrap gap-1.5">
-            <Badge tone={ISSUE_STATUS_TONE[issue.status]}>{titleCase(issue.status)}</Badge>
-            <Badge tone={SEVERITY_TONE[issue.severity]}>{titleCase(issue.severity)} severity</Badge>
+            <Badge tone={ISSUE_STATUS_TONE[issue.status]}>{tEnum('issueStatus', issue.status)}</Badge>
+            <Badge tone={SEVERITY_TONE[issue.severity]}>
+              {t('issueDetail.severityBadge', { level: tEnum('severity', issue.severity) })}
+            </Badge>
           </div>
         </div>
         <div className="flex gap-2">
           <button type="button" className="btn-ghost" onClick={() => setEditing(true)}>
             <Pencil className="size-4" />
-            Edit
+            {t('common.edit')}
           </button>
           <button type="button" className="btn-ghost hover:text-red-600" onClick={() => setConfirmDelete(true)}>
             <Trash2 className="size-4" />
-            Delete
+            {t('common.delete')}
           </button>
         </div>
       </div>
@@ -153,13 +165,13 @@ export default function IssueDetailPage() {
             <div className="card space-y-4 p-4">
               {issue.description && (
                 <div>
-                  <p className="section-title mb-1">What you're seeing</p>
+                  <p className="section-title mb-1">{t('issueDetail.whatSeeing')}</p>
                   <p className="whitespace-pre-wrap text-sm text-stone-700 dark:text-stone-300">{issue.description}</p>
                 </div>
               )}
               {issue.diagnosis && (
                 <div>
-                  <p className="section-title mb-1">Diagnosis</p>
+                  <p className="section-title mb-1">{t('issueDetail.diagnosis')}</p>
                   <p className="whitespace-pre-wrap text-sm text-stone-700 dark:text-stone-300">{issue.diagnosis}</p>
                 </div>
               )}
@@ -168,13 +180,13 @@ export default function IssueDetailPage() {
 
           {issue.attachments.length > 0 && (
             <div className="card p-4">
-              <p className="section-title mb-2">Files</p>
+              <p className="section-title mb-2">{t('common.files')}</p>
               <AttachmentGallery items={issue.attachments} />
             </div>
           )}
 
           <div>
-            <p className="section-title mb-2">Progress</p>
+            <p className="section-title mb-2">{t('issueDetail.progress')}</p>
             <UpdateComposer issue={issue} />
 
             {updates.length > 0 && (
@@ -189,7 +201,7 @@ export default function IssueDetailPage() {
                         className="btn-subtle px-1.5 py-0.5 text-xs hover:text-red-600"
                         onClick={() => setPendingUpdateDelete(update.id)}
                       >
-                        Remove
+                        {t('common.remove')}
                       </button>
                     </div>
                     {update.note && <p className="mt-0.5 text-sm whitespace-pre-wrap text-stone-600 dark:text-stone-400">{update.note}</p>}
@@ -207,7 +219,7 @@ export default function IssueDetailPage() {
 
         <div className="space-y-6">
           <div className="card p-4">
-            <p className="section-title mb-2">Location</p>
+            <p className="section-title mb-2">{t('issueDetail.location')}</p>
             <CatBody
               issues={[issue]}
               viewSide={issue.side === 'right' ? 'right' : 'left'}
@@ -219,22 +231,24 @@ export default function IssueDetailPage() {
           <div className="card p-4">
             <p className="section-title mb-2 flex items-center gap-1.5">
               <CalendarDays className="size-3.5" />
-              Appointments
+              {t('appt.title')}
             </p>
             {appointments.length === 0 ? (
               <p className="text-sm text-stone-500">
-                None linked yet — link one when you{' '}
+                {beforeLink}
                 <Link to="/appointments" className="link">
-                  add an appointment
+                  {t('issueDetail.addAppointmentLink')}
                 </Link>
-                .
+                {afterLink}
               </p>
             ) : (
               <ul className="space-y-2 text-sm">
                 {appointments.map((appointment) => (
                   <li key={appointment.id}>
                     <p className="font-medium text-stone-800 dark:text-stone-200">{formatDateTime(appointment.dateTime)}</p>
-                    <p className="text-stone-500">{appointment.outcome || appointment.reason || titleCase(appointment.type)}</p>
+                    <p className="text-stone-500">
+                      {appointment.outcome || appointment.reason || tEnum('appointmentType', appointment.type)}
+                    </p>
                   </li>
                 ))}
               </ul>
@@ -244,17 +258,17 @@ export default function IssueDetailPage() {
           <div className="card p-4">
             <p className="section-title mb-2 flex items-center gap-1.5">
               <Pill className="size-3.5" />
-              Medications
+              {t('med.title')}
             </p>
             {medications.length === 0 ? (
-              <p className="text-sm text-stone-500">None linked yet.</p>
+              <p className="text-sm text-stone-500">{t('issueDetail.noMedications')}</p>
             ) : (
               <ul className="space-y-2 text-sm">
                 {medications.map((medication) => (
                   <li key={medication.id}>
                     <p className="font-medium text-stone-800 dark:text-stone-200">{medication.name}</p>
                     <p className="text-stone-500">
-                      {[medication.dose, medication.frequency].filter(Boolean).join(' · ') || 'No dose recorded'}
+                      {[medication.dose, medication.frequency].filter(Boolean).join(' · ') || t('issueDetail.noDose')}
                     </p>
                   </li>
                 ))}
@@ -268,8 +282,8 @@ export default function IssueDetailPage() {
 
       <ConfirmDialog
         open={confirmDelete}
-        title="Delete this issue?"
-        message={`“${issue.title}” and all of its progress updates will be permanently removed.`}
+        title={t('issueDetail.deleteTitle')}
+        message={t('issueDetail.deleteMessage', { title: issue.title })}
         onConfirm={() => {
           setConfirmDelete(false);
           void remove('issues', issue.id).then(() => navigate('/health'));
@@ -279,9 +293,9 @@ export default function IssueDetailPage() {
 
       <ConfirmDialog
         open={pendingUpdateDelete !== null}
-        title="Remove this update?"
-        message="The progress note will be deleted from the timeline."
-        confirmLabel="Remove"
+        title={t('issueDetail.removeUpdateTitle')}
+        message={t('issueDetail.removeUpdateMessage')}
+        confirmLabel={t('common.remove')}
         onConfirm={() => void removeUpdate(pendingUpdateDelete!)}
         onCancel={() => setPendingUpdateDelete(null)}
       />

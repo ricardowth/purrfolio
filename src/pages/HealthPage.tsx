@@ -6,12 +6,18 @@ import { CatBody, SeverityLegend, type PartSelection } from '@/anatomy/CatBody';
 import { describePart } from '@/anatomy/regions';
 import { IssueEditor } from '@/components/IssueEditor';
 import { Badge, EmptyState, ISSUE_STATUS_TONE, PageHeader, SEVERITY_TONE, cx } from '@/components/ui';
-import { formatDate, relativeDays, titleCase } from '@/lib/format';
+import { useI18n } from '@/lib/i18n';
+import { useFormat } from '@/lib/format';
+import type { StringKey } from '@/lib/strings';
 import type { Issue } from '@shared/types';
 
 type StatusFilter = 'open' | 'all' | 'resolved';
 
 function IssueCard({ issue }: { issue: Issue }) {
+  const i18n = useI18n();
+  const { t, tn, tEnum } = i18n;
+  const { formatDate, relativeDays } = useFormat();
+
   return (
     <Link
       to={`/issues/${issue.id}`}
@@ -21,26 +27,37 @@ function IssueCard({ issue }: { issue: Issue }) {
         <div className="min-w-0">
           <p className="truncate font-medium text-stone-900 dark:text-stone-100">{issue.title}</p>
           <p className="mt-0.5 text-xs text-stone-500">
-            {describePart(issue.bodyPart, issue.side)} · first noticed {formatDate(issue.onsetDate)}
+            {describePart(i18n, issue.bodyPart, issue.side)} · {t('health.firstNoticed', { date: formatDate(issue.onsetDate) })}
           </p>
         </div>
         <div className="flex shrink-0 flex-col items-end gap-1">
-          <Badge tone={ISSUE_STATUS_TONE[issue.status]}>{titleCase(issue.status)}</Badge>
-          {issue.status !== 'resolved' && <Badge tone={SEVERITY_TONE[issue.severity]}>{titleCase(issue.severity)}</Badge>}
+          <Badge tone={ISSUE_STATUS_TONE[issue.status]}>{tEnum('issueStatus', issue.status)}</Badge>
+          {issue.status !== 'resolved' && <Badge tone={SEVERITY_TONE[issue.severity]}>{tEnum('severity', issue.severity)}</Badge>}
         </div>
       </div>
       {issue.description && <p className="mt-2 line-clamp-2 text-sm text-stone-600 dark:text-stone-400">{issue.description}</p>}
       <p className="mt-2 text-xs text-stone-400">
         {issue.updates.length > 0
-          ? `${issue.updates.length} update${issue.updates.length === 1 ? '' : 's'} · last ${relativeDays(issue.updates[issue.updates.length - 1].date)}`
-          : 'No progress updates yet'}
+          ? tn('health.updatesCount', issue.updates.length, {
+              when: relativeDays(issue.updates[issue.updates.length - 1].date),
+            })
+          : t('health.noUpdates')}
       </p>
     </Link>
   );
 }
 
+/** Empty-state copy depends on which status filter is narrowing the list. */
+const EMPTY_MESSAGE_KEY: Record<StatusFilter, StringKey> = {
+  all: 'health.emptySelectedMessage',
+  open: 'health.emptySelectedMessageOpen',
+  resolved: 'health.emptySelectedMessageResolved',
+};
+
 export default function HealthPage() {
   const { forPet, pet } = useData();
+  const i18n = useI18n();
+  const { t, tn } = i18n;
   const issues = forPet('issues');
 
   const [viewSide, setViewSide] = useState<'left' | 'right'>('left');
@@ -59,19 +76,21 @@ export default function HealthPage() {
 
   const openCount = issues.filter((issue) => issue.status !== 'resolved').length;
 
+  const filters: [StatusFilter, StringKey][] = [
+    ['open', 'health.filterOpen'],
+    ['resolved', 'health.filterResolved'],
+    ['all', 'health.filterAll'],
+  ];
+
   return (
     <>
       <PageHeader
-        title="Health map"
-        subtitle={
-          pet
-            ? `${openCount} open issue${openCount === 1 ? '' : 's'} for ${pet.name}. Click a body part to filter, or to record something new there.`
-            : undefined
-        }
+        title={t('health.title')}
+        subtitle={pet ? tn('health.subtitle', openCount, { name: pet.name }) : undefined}
         actions={
           <button type="button" className="btn-primary" onClick={() => setEditorOpen(true)}>
             <Plus className="size-4" />
-            New issue
+            {t('health.newIssue')}
           </button>
         }
       />
@@ -90,7 +109,7 @@ export default function HealthPage() {
                     viewSide === side ? 'bg-amber-600 text-white' : 'bg-white text-stone-600 dark:bg-stone-900 dark:text-stone-400',
                   )}
                 >
-                  {side === 'left' ? 'Left side' : 'Right side'}
+                  {side === 'left' ? t('body.leftSide') : t('body.rightSide')}
                 </button>
               ))}
             </div>
@@ -99,7 +118,7 @@ export default function HealthPage() {
               onClick={() => setShowInternal((prev) => !prev)}
               className={cx('btn text-xs', showInternal ? 'btn-primary' : 'btn-ghost')}
             >
-              Organs
+              {t('body.organs')}
             </button>
           </div>
 
@@ -108,6 +127,7 @@ export default function HealthPage() {
             viewSide={viewSide}
             showInternal={showInternal}
             selected={selected}
+            showOffDiagram
             onSelect={(part) =>
               setSelected((prev) => (prev?.bodyPart === part.bodyPart && prev.side === part.side ? null : part))
             }
@@ -118,38 +138,36 @@ export default function HealthPage() {
           </div>
 
           <p className="mt-3 text-center text-xs text-stone-400">
-            The near-side legs are solid; the faded ones behind belong to the {viewSide === 'left' ? 'right' : 'left'} side.
+            {t('health.legHint', {
+              side: viewSide === 'left' ? t('health.legHintRight') : t('health.legHintLeft'),
+            })}
           </p>
         </div>
 
         <div className="lg:col-span-3">
           <div className="mb-3 flex flex-wrap items-center gap-2">
             <div className="inline-flex overflow-hidden rounded-lg border border-stone-300 text-xs dark:border-stone-700">
-              {(
-                [
-                  ['open', 'Open'],
-                  ['resolved', 'Resolved'],
-                  ['all', 'All'],
-                ] as const
-              ).map(([value, label]) => (
+              {filters.map(([value, label]) => (
                 <button
                   key={value}
                   type="button"
                   onClick={() => setStatusFilter(value)}
                   className={cx(
                     'cursor-pointer px-3 py-1.5 font-medium transition-colors',
-                    statusFilter === value ? 'bg-stone-800 text-white dark:bg-stone-200 dark:text-stone-900' : 'bg-white text-stone-600 dark:bg-stone-900 dark:text-stone-400',
+                    statusFilter === value
+                      ? 'bg-stone-800 text-white dark:bg-stone-200 dark:text-stone-900'
+                      : 'bg-white text-stone-600 dark:bg-stone-900 dark:text-stone-400',
                   )}
                 >
-                  {label}
+                  {t(label)}
                 </button>
               ))}
             </div>
 
             {selected && (
               <span className="badge bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-200">
-                {describePart(selected.bodyPart, selected.side)}
-                <button type="button" onClick={() => setSelected(null)} aria-label="Clear body part filter" className="cursor-pointer">
+                {describePart(i18n, selected.bodyPart, selected.side)}
+                <button type="button" onClick={() => setSelected(null)} aria-label={t('health.clearFilter')} className="cursor-pointer">
                   <X className="size-3" />
                 </button>
               </span>
@@ -160,7 +178,7 @@ export default function HealthPage() {
             {selected && (
               <button type="button" className="btn-ghost text-xs" onClick={() => setEditorOpen(true)}>
                 <Plus className="size-3.5" />
-                Add issue here
+                {t('health.addIssueHere')}
               </button>
             )}
           </div>
@@ -168,16 +186,16 @@ export default function HealthPage() {
           {visible.length === 0 ? (
             <EmptyState
               icon={Activity}
-              title={selected ? 'Nothing recorded on this part' : 'No issues to show'}
+              title={selected ? t('health.emptySelectedTitle') : t('health.emptyTitle')}
               message={
                 selected
-                  ? `${describePart(selected.bodyPart, selected.side)} has no ${statusFilter === 'all' ? '' : statusFilter + ' '}issues.`
-                  : 'Record anything you notice — a limp, a lump, a change in appetite. Even resolved issues are worth keeping.'
+                  ? t(EMPTY_MESSAGE_KEY[statusFilter], { part: describePart(i18n, selected.bodyPart, selected.side) })
+                  : t('health.emptyMessage')
               }
               action={
                 <button type="button" className="btn-primary" onClick={() => setEditorOpen(true)}>
                   <Plus className="size-4" />
-                  New issue
+                  {t('health.newIssue')}
                 </button>
               }
             />

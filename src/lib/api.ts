@@ -1,3 +1,5 @@
+import type { I18n } from '@/lib/i18n';
+import type { StringKey } from '@/lib/strings';
 import type { Attachment, CollectionName, Database } from '@shared/types';
 
 export interface ApiIssue {
@@ -5,15 +7,20 @@ export interface ApiIssue {
   message: string;
 }
 
+/** Failures this module raises itself, as opposed to text relayed from the server. */
+export type ApiErrorCode = 'offline' | 'requestFailed';
+
 export class ApiError extends Error {
   issues: ApiIssue[];
   status: number;
+  code?: ApiErrorCode;
 
-  constructor(message: string, status: number, issues: ApiIssue[] = []) {
+  constructor(message: string, status: number, issues: ApiIssue[] = [], code?: ApiErrorCode) {
     super(message);
     this.name = 'ApiError';
     this.status = status;
     this.issues = issues;
+    this.code = code;
   }
 
   /** Field name -> message, for showing errors next to the offending input. */
@@ -30,18 +37,37 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
       headers: init?.body instanceof FormData ? init.headers : { 'Content-Type': 'application/json', ...init?.headers },
     });
   } catch {
-    throw new ApiError('Cannot reach the Purrfolio server. Is `npm run dev` still running?', 0);
+    throw new ApiError('Cannot reach the Purrfolio server. Is `npm run dev` still running?', 0, [], 'offline');
   }
 
   if (!response.ok) {
     const body = await response.json().catch(() => ({}) as Record<string, unknown>);
+    const relayed = body.error as string | undefined;
     throw new ApiError(
-      (body.error as string) ?? `Request failed (${response.status})`,
+      relayed ?? `Request failed (${response.status})`,
       response.status,
       (body.issues as ApiIssue[]) ?? [],
+      relayed ? undefined : 'requestFailed',
     );
   }
   return response.status === 204 ? (undefined as T) : ((await response.json()) as T);
+}
+
+/**
+ * Message to show for a failed request. Errors we raised ourselves carry a code
+ * and get translated; anything relayed from the server is shown as sent, with
+ * `fallback` covering non-Error throws.
+ */
+export function apiMessage(error: unknown, i18n: I18n, fallback: StringKey): string {
+  if (error instanceof ApiError && error.code === 'offline') return i18n.t('error.offline');
+  if (error instanceof ApiError && error.code === 'requestFailed') return i18n.t('error.requestFailed', { status: error.status });
+  if (error instanceof Error && error.message) return error.message;
+  return i18n.t(fallback);
+}
+
+/** Field errors arrive as `validation.*` codes; turn them into readable text. */
+export function translateFieldErrors(byField: Record<string, string>, i18n: I18n): Record<string, string> {
+  return Object.fromEntries(Object.entries(byField).map(([field, code]) => [field, i18n.tLoose(code)]));
 }
 
 export interface BackupInfo {

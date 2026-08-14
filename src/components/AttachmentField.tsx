@@ -1,7 +1,8 @@
 import { useRef, useState } from 'react';
 import { FileText, Loader2, Paperclip, X } from 'lucide-react';
-import { api, fileUrl } from '@/lib/api';
+import { api, apiMessage, fileUrl } from '@/lib/api';
 import { formatBytes } from '@/lib/format';
+import { useI18n } from '@/lib/i18n';
 import { ErrorNote } from '@/components/ui';
 import type { Attachment } from '@shared/types';
 
@@ -42,6 +43,7 @@ export function AttachmentGallery({ items }: { items: Attachment[] }) {
 /** Single-image picker, used for a pet's profile photo. Stores just the filename. */
 export function PhotoField({ value, onChange, name }: { value: string; onChange: (filename: string) => void; name: string }) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const { t } = useI18n();
   const [busy, setBusy] = useState(false);
 
   async function pick(files: FileList | null) {
@@ -68,11 +70,11 @@ export function PhotoField({ value, onChange, name }: { value: string; onChange:
       <div className="flex gap-2">
         <button type="button" className="btn-ghost" onClick={() => inputRef.current?.click()} disabled={busy}>
           {busy ? <Loader2 className="size-4 animate-spin" /> : <Paperclip className="size-4" />}
-          {value ? 'Change' : 'Upload photo'}
+          {value ? t('attach.change') : t('attach.uploadPhoto')}
         </button>
         {value && (
           <button type="button" className="btn-subtle" onClick={() => onChange('')}>
-            Remove
+            {t('common.remove')}
           </button>
         )}
       </div>
@@ -84,6 +86,8 @@ export function PhotoField({ value, onChange, name }: { value: string; onChange:
 /** Upload / remove attachments as part of a form. */
 export function AttachmentField({ value, onChange }: { value: Attachment[]; onChange: (next: Attachment[]) => void }) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const i18n = useI18n();
+  const { t } = i18n;
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -94,7 +98,7 @@ export function AttachmentField({ value, onChange }: { value: Attachment[]; onCh
     try {
       onChange([...value, ...(await api.upload(Array.from(files)))]);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Upload failed');
+      setError(apiMessage(err, i18n, 'common.uploadFailed'));
     } finally {
       setBusy(false);
       if (inputRef.current) inputRef.current.value = '';
@@ -127,7 +131,7 @@ export function AttachmentField({ value, onChange }: { value: Attachment[]; onCh
             <button
               type="button"
               onClick={() => void removeAt(item)}
-              aria-label={`Remove ${item.originalName}`}
+              aria-label={t('attach.removeNamed', { name: item.originalName })}
               className="absolute -top-1.5 -right-1.5 cursor-pointer rounded-full bg-stone-800 p-0.5 text-white shadow hover:bg-red-600"
             >
               <X className="size-3" />
@@ -143,7 +147,7 @@ export function AttachmentField({ value, onChange }: { value: Attachment[]; onCh
           className="flex size-20 cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border border-dashed border-stone-300 text-xs text-stone-500 hover:border-amber-500 hover:text-amber-700 disabled:opacity-50 dark:border-stone-700 dark:hover:border-amber-600"
         >
           {busy ? <Loader2 className="size-5 animate-spin" /> : <Paperclip className="size-5" />}
-          {busy ? 'Uploading' : 'Add file'}
+          {busy ? t('attach.uploading') : t('attach.addFile')}
         </button>
       </div>
 

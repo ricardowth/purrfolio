@@ -1,4 +1,5 @@
 import { Route, Routes } from 'react-router-dom';
+import { useI18n } from '@/lib/i18n';
 import { useData } from '@/store/DataContext';
 import { Layout, RequirePet } from '@/components/Layout';
 import { ErrorNote, Spinner } from '@/components/ui';
@@ -36,12 +37,13 @@ const petPages: [string, React.ComponentType][] = [
 
 export default function App() {
   const { loading, error } = useData();
+  const { t } = useI18n();
 
   return (
     <Layout>
       {error && <ErrorNote>{error}</ErrorNote>}
       {loading ? (
-        <Spinner label="Loading your records…" />
+        <Spinner label={t('common.loadingRecords')} />
       ) : (
         <Routes>
           {petPages.map(([path, Page]) => (

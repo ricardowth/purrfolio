@@ -4,7 +4,8 @@ import { ResourcePage } from '@/components/ResourcePage';
 import { Badge, Checkbox, Field, Select } from '@/components/ui';
 import { PhotoField } from '@/components/AttachmentField';
 import { fileUrl } from '@/lib/api';
-import { formatAge, formatDate, titleCase } from '@/lib/format';
+import { useI18n } from '@/lib/i18n';
+import { titleCase, useFormat } from '@/lib/format';
 import { parseList, stripMeta, type FormValues } from '@/lib/forms';
 import { SEXES } from '@shared/schema.js';
 import type { Pet } from '@shared/types';
@@ -32,23 +33,25 @@ const blank = (): Values => ({
 
 export default function PetsPage() {
   const { allPets } = useData();
+  const { t, tn, tEnum } = useI18n();
+  const { formatAge, formatDate } = useFormat();
 
   return (
     <ResourcePage<Pet, Values>
       collection="pets"
-      title="Pets"
-      subtitle="Everyone you're keeping records for."
-      addLabel="Add pet"
+      title={t('pets.title')}
+      subtitle={t('pets.subtitle')}
+      addLabel={t('pets.add')}
       emptyIcon={Cat}
-      emptyTitle="No pets yet"
-      emptyMessage="Add your first pet to unlock the rest of the app."
+      emptyTitle={t('pets.emptyTitle')}
+      emptyMessage={t('pets.emptyMessage')}
       rows={allPets}
       describe={(pet) => pet.name}
       defaults={blank}
       toValues={stripMeta}
       columns={[
         {
-          header: 'Pet',
+          header: t('pets.pet'),
           render: (pet) => (
             <div className="flex items-center gap-3">
               {pet.photo ? (
@@ -65,82 +68,98 @@ export default function PetsPage() {
             </div>
           ),
         },
-        { header: 'Age', render: (pet) => <span className="text-stone-600 dark:text-stone-400">{formatAge(pet.birthDate)}</span> },
-        { header: 'Born', render: (pet) => formatDate(pet.birthDate) },
+        { header: t('pets.age'), render: (pet) => <span className="text-stone-600 dark:text-stone-400">{formatAge(pet.birthDate)}</span> },
+        { header: t('pets.born'), render: (pet) => formatDate(pet.birthDate) },
         {
-          header: 'Details',
+          header: t('pets.details'),
           render: (pet) => (
             <div className="flex flex-wrap gap-1">
-              <Badge tone="neutral">{titleCase(pet.sex)}</Badge>
-              {pet.neutered && <Badge tone="blue">Neutered</Badge>}
-              {pet.allergies.length > 0 && <Badge tone="red">{pet.allergies.length} allergy</Badge>}
-              {pet.archived && <Badge tone="neutral">Archived</Badge>}
+              <Badge tone="neutral">{tEnum('sex', pet.sex)}</Badge>
+              {pet.neutered && <Badge tone="blue">{t('pets.neutered')}</Badge>}
+              {pet.allergies.length > 0 && <Badge tone="red">{tn('pets.allergyCount', pet.allergies.length)}</Badge>}
+              {pet.archived && <Badge tone="neutral">{t('pets.archived')}</Badge>}
             </div>
           ),
         },
       ]}
       renderForm={({ values, set, errors }) => (
         <>
-          <Field label="Photo">
+          <Field label={t('pets.photo')}>
             <PhotoField value={values.photo} name={values.name} onChange={(photo) => set({ photo })} />
           </Field>
 
           <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="Name" error={errors.name}>
-              <input className="input" value={values.name} onChange={(e) => set({ name: e.target.value })} placeholder="Mochi" />
+            <Field label={t('common.name')} error={errors.name}>
+              <input
+                className="input"
+                value={values.name}
+                onChange={(e) => set({ name: e.target.value })}
+                placeholder={t('pets.namePlaceholder')}
+              />
             </Field>
-            <Field label="Species">
-              <input className="input" value={values.species} onChange={(e) => set({ species: e.target.value })} placeholder="cat" />
+            <Field label={t('pets.species')}>
+              <input
+                className="input"
+                value={values.species}
+                onChange={(e) => set({ species: e.target.value })}
+                placeholder={t('pets.speciesPlaceholder')}
+              />
             </Field>
-            <Field label="Breed">
-              <input className="input" value={values.breed} onChange={(e) => set({ breed: e.target.value })} placeholder="Domestic shorthair" />
+            <Field label={t('pets.breed')}>
+              <input
+                className="input"
+                value={values.breed}
+                onChange={(e) => set({ breed: e.target.value })}
+                placeholder={t('pets.breedPlaceholder')}
+              />
             </Field>
-            <Field label="Colour / markings">
-              <input className="input" value={values.colour} onChange={(e) => set({ colour: e.target.value })} placeholder="Ginger tabby" />
+            <Field label={t('pets.colour')}>
+              <input
+                className="input"
+                value={values.colour}
+                onChange={(e) => set({ colour: e.target.value })}
+                placeholder={t('pets.colourPlaceholder')}
+              />
             </Field>
-            <Field label="Sex">
-              <Select options={SEXES} value={values.sex} onChange={(e) => set({ sex: e.target.value as Values['sex'] })} />
+            <Field label={t('pets.sex')}>
+              <Select options={SEXES} group="sex" value={values.sex} onChange={(e) => set({ sex: e.target.value as Values['sex'] })} />
             </Field>
-            <Field label="Date of birth" error={errors.birthDate} hint="Approximate is fine — it drives the age shown everywhere.">
+            <Field label={t('pets.birthDate')} error={errors.birthDate} hint={t('pets.birthDateHint')}>
               <input type="date" className="input" value={values.birthDate} onChange={(e) => set({ birthDate: e.target.value })} />
             </Field>
-            <Field label="Adoption date">
+            <Field label={t('pets.adoptionDate')}>
               <input type="date" className="input" value={values.adoptionDate} onChange={(e) => set({ adoptionDate: e.target.value })} />
             </Field>
-            <Field label="Microchip number">
+            <Field label={t('pets.microchip')}>
               <input className="input" value={values.microchip} onChange={(e) => set({ microchip: e.target.value })} />
             </Field>
-            <Field label="Insurer">
+            <Field label={t('pets.insurer')}>
               <input className="input" value={values.insurer} onChange={(e) => set({ insurer: e.target.value })} />
             </Field>
-            <Field label="Policy number">
+            <Field label={t('pets.policyNumber')}>
               <input className="input" value={values.policyNumber} onChange={(e) => set({ policyNumber: e.target.value })} />
             </Field>
           </div>
 
-          <Field label="Allergies" hint="Comma separated. These are highlighted on the care sheet.">
+          <Field label={t('pets.allergies')} hint={t('pets.allergiesHint')}>
             <input
               className="input"
               value={values.allergies.join(', ')}
               onChange={(e) => set({ allergies: parseList(e.target.value) })}
-              placeholder="chicken, dust mites"
+              placeholder={t('pets.allergiesPlaceholder')}
             />
           </Field>
 
-          <Field label="Quirks & handling notes" hint="What a sitter needs to know: hiding spots, how they take pills, who they hate.">
+          <Field label={t('pets.quirks')} hint={t('pets.quirksHint')}>
             <textarea className="input min-h-20" value={values.quirks} onChange={(e) => set({ quirks: e.target.value })} />
           </Field>
 
-          <Field label="Notes">
+          <Field label={t('common.notes')}>
             <textarea className="input min-h-20" value={values.notes} onChange={(e) => set({ notes: e.target.value })} />
           </Field>
 
-          <Checkbox label="Neutered / spayed" checked={values.neutered} onChange={(neutered) => set({ neutered })} />
-          <Checkbox
-            label="Archived (hide from the pet switcher)"
-            checked={values.archived}
-            onChange={(archived) => set({ archived })}
-          />
+          <Checkbox label={t('pets.neuteredLabel')} checked={values.neutered} onChange={(neutered) => set({ neutered })} />
+          <Checkbox label={t('pets.archivedLabel')} checked={values.archived} onChange={(archived) => set({ archived })} />
         </>
       )}
     />

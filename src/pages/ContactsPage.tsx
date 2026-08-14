@@ -2,7 +2,7 @@ import { Users } from 'lucide-react';
 import { useData } from '@/store/DataContext';
 import { ResourcePage } from '@/components/ResourcePage';
 import { Badge, Field, Select, type Tone } from '@/components/ui';
-import { titleCase } from '@/lib/format';
+import { useI18n } from '@/lib/i18n';
 import { stripMeta, type FormValues } from '@/lib/forms';
 import { CONTACT_ROLES } from '@shared/schema.js';
 import type { Contact } from '@shared/types';
@@ -31,24 +31,25 @@ const blank = (): Values => ({
 
 export default function ContactsPage() {
   const { db } = useData();
+  const { t, tEnum } = useI18n();
   const rows = [...db.contacts].sort((a, b) => a.name.localeCompare(b.name));
 
   return (
     <ResourcePage<Contact, Values>
       collection="contacts"
-      title="Contacts"
-      subtitle="Vets, clinics, sitters and anyone else you might need in a hurry. Shared across all pets."
-      addLabel="Add contact"
+      title={t('contacts.title')}
+      subtitle={t('contacts.subtitle')}
+      addLabel={t('contacts.add')}
       emptyIcon={Users}
-      emptyTitle="No contacts yet"
-      emptyMessage="Add your vet first — appointments and the care sheet both link to contacts."
+      emptyTitle={t('contacts.emptyTitle')}
+      emptyMessage={t('contacts.emptyMessage')}
       rows={rows}
       describe={(contact) => contact.name}
       defaults={blank}
       toValues={stripMeta}
       columns={[
         {
-          header: 'Name',
+          header: t('common.name'),
           render: (contact) => (
             <div>
               <p className="font-medium text-stone-900 dark:text-stone-100">{contact.name}</p>
@@ -56,9 +57,9 @@ export default function ContactsPage() {
             </div>
           ),
         },
-        { header: 'Role', render: (contact) => <Badge tone={ROLE_TONE[contact.role]}>{titleCase(contact.role)}</Badge> },
+        { header: t('contacts.role'), render: (contact) => <Badge tone={ROLE_TONE[contact.role]}>{tEnum('contactRole', contact.role)}</Badge> },
         {
-          header: 'Phone',
+          header: t('contacts.phone'),
           render: (contact) =>
             contact.phone ? (
               <a href={`tel:${contact.phone.replace(/\s/g, '')}`} className="link">
@@ -69,7 +70,7 @@ export default function ContactsPage() {
             ),
         },
         {
-          header: 'Email',
+          header: t('contacts.email'),
           render: (contact) =>
             contact.email ? (
               <a href={`mailto:${contact.email}`} className="link">
@@ -79,34 +80,49 @@ export default function ContactsPage() {
               '—'
             ),
         },
-        { header: 'Hours', render: (contact) => contact.hours || '—' },
+        { header: t('contacts.hours'), render: (contact) => contact.hours || '—' },
       ]}
       renderForm={({ values, set, errors }) => (
         <>
           <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="Name" error={errors.name}>
-              <input className="input" value={values.name} onChange={(e) => set({ name: e.target.value })} placeholder="Dr. Ana Marques" />
+            <Field label={t('common.name')} error={errors.name}>
+              <input
+                className="input"
+                value={values.name}
+                onChange={(e) => set({ name: e.target.value })}
+                placeholder={t('contacts.namePlaceholder')}
+              />
             </Field>
-            <Field label="Role">
-              <Select options={CONTACT_ROLES} value={values.role} onChange={(e) => set({ role: e.target.value as Values['role'] })} />
+            <Field label={t('contacts.role')}>
+              <Select
+                options={CONTACT_ROLES}
+                group="contactRole"
+                value={values.role}
+                onChange={(e) => set({ role: e.target.value as Values['role'] })}
+              />
             </Field>
-            <Field label="Organisation">
+            <Field label={t('contacts.organisation')}>
               <input className="input" value={values.organisation} onChange={(e) => set({ organisation: e.target.value })} />
             </Field>
-            <Field label="Phone">
+            <Field label={t('contacts.phone')}>
               <input className="input" value={values.phone} onChange={(e) => set({ phone: e.target.value })} />
             </Field>
-            <Field label="Email">
+            <Field label={t('contacts.email')}>
               <input type="email" className="input" value={values.email} onChange={(e) => set({ email: e.target.value })} />
             </Field>
-            <Field label="Opening hours">
-              <input className="input" value={values.hours} onChange={(e) => set({ hours: e.target.value })} placeholder="Mon–Fri 9–19, Sat 9–13" />
+            <Field label={t('contacts.openingHours')}>
+              <input
+                className="input"
+                value={values.hours}
+                onChange={(e) => set({ hours: e.target.value })}
+                placeholder={t('contacts.hoursPlaceholder')}
+              />
             </Field>
           </div>
-          <Field label="Address">
+          <Field label={t('contacts.address')}>
             <textarea className="input min-h-16" value={values.address} onChange={(e) => set({ address: e.target.value })} />
           </Field>
-          <Field label="Notes">
+          <Field label={t('common.notes')}>
             <textarea className="input min-h-16" value={values.notes} onChange={(e) => set({ notes: e.target.value })} />
           </Field>
         </>

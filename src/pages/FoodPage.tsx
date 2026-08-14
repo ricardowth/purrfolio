@@ -3,7 +3,8 @@ import { useData } from '@/store/DataContext';
 import { ResourcePage } from '@/components/ResourcePage';
 import { AttachmentField } from '@/components/AttachmentField';
 import { Badge, Checkbox, Field, Select, type Tone } from '@/components/ui';
-import { formatDate, formatMoney, titleCase, today } from '@/lib/format';
+import { useI18n } from '@/lib/i18n';
+import { today, useFormat } from '@/lib/format';
 import { numberOrNull, numberValue, stripMeta, type FormValues } from '@/lib/forms';
 import { FOOD_TYPES } from '@shared/schema.js';
 import type { Food } from '@shared/types';
@@ -34,6 +35,8 @@ function Stars({ rating }: { rating: number | null }) {
 
 export default function FoodPage() {
   const { petId, forPet } = useData();
+  const { t, tEnum } = useI18n();
+  const { formatDate, formatMoney } = useFormat();
   const rows = [...forPet('foods')].sort((a, b) => Number(b.current) - Number(a.current) || a.product.localeCompare(b.product));
 
   const blank = (): Values => ({
@@ -56,19 +59,19 @@ export default function FoodPage() {
   return (
     <ResourcePage<Food, Values>
       collection="foods"
-      title="Food & diet"
-      subtitle="What they eat now, what they used to eat, and how it went."
-      addLabel="Add food"
+      title={t('food.title')}
+      subtitle={t('food.subtitle')}
+      addLabel={t('food.add')}
       emptyIcon={Soup}
-      emptyTitle="No food recorded"
-      emptyMessage="Add their current food first — it becomes the feeding schedule on the care sheet."
+      emptyTitle={t('food.emptyTitle')}
+      emptyMessage={t('food.emptyMessage')}
       rows={rows}
       describe={(row) => [row.brand, row.product].filter(Boolean).join(' ')}
       defaults={blank}
       toValues={stripMeta}
       columns={[
         {
-          header: 'Food',
+          header: t('food.food'),
           render: (row) => (
             <div>
               <p className="font-medium text-stone-900 dark:text-stone-100">{row.product}</p>
@@ -76,37 +79,60 @@ export default function FoodPage() {
             </div>
           ),
         },
-        { header: 'Type', render: (row) => <Badge tone={TYPE_TONE[row.type]}>{titleCase(row.type)}</Badge> },
+        { header: t('common.type'), render: (row) => <Badge tone={TYPE_TONE[row.type]}>{tEnum('foodType', row.type)}</Badge> },
         {
-          header: 'Amount',
+          header: t('food.amount'),
           render: (row) => (
             <span>
               {row.amountPerDay || '—'}
-              {row.timesPerDay ? ` · ${row.timesPerDay}×/day` : ''}
+              {row.timesPerDay ? ` · ${t('dash.perDay', { n: row.timesPerDay })}` : ''}
             </span>
           ),
         },
-        { header: 'Status', render: (row) => (row.current ? <Badge tone="green">Current</Badge> : <Badge tone="neutral">Stopped</Badge>) },
-        { header: 'Since', render: (row) => formatDate(row.startDate) },
-        { header: 'Rating', render: (row) => <Stars rating={row.rating} /> },
-        { header: 'Cost', render: (row) => formatMoney(row.cost) },
+        {
+          header: t('common.status'),
+          render: (row) => (row.current ? <Badge tone="green">{t('food.current')}</Badge> : <Badge tone="neutral">{t('food.stopped')}</Badge>),
+        },
+        { header: t('food.since'), render: (row) => formatDate(row.startDate) },
+        { header: t('food.rating'), render: (row) => <Stars rating={row.rating} /> },
+        { header: t('common.cost'), render: (row) => formatMoney(row.cost) },
       ]}
       renderForm={({ values, set, errors }) => (
         <>
           <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="Product" error={errors.product}>
-              <input className="input" value={values.product} onChange={(e) => set({ product: e.target.value })} placeholder="Adult Sterilised Salmon" />
+            <Field label={t('food.product')} error={errors.product}>
+              <input
+                className="input"
+                value={values.product}
+                onChange={(e) => set({ product: e.target.value })}
+                placeholder={t('food.productPlaceholder')}
+              />
             </Field>
-            <Field label="Brand">
-              <input className="input" value={values.brand} onChange={(e) => set({ brand: e.target.value })} placeholder="Royal Canin" />
+            <Field label={t('food.brand')}>
+              <input
+                className="input"
+                value={values.brand}
+                onChange={(e) => set({ brand: e.target.value })}
+                placeholder={t('food.brandPlaceholder')}
+              />
             </Field>
-            <Field label="Type">
-              <Select options={FOOD_TYPES} value={values.type} onChange={(e) => set({ type: e.target.value as Values['type'] })} />
+            <Field label={t('common.type')}>
+              <Select
+                options={FOOD_TYPES}
+                group="foodType"
+                value={values.type}
+                onChange={(e) => set({ type: e.target.value as Values['type'] })}
+              />
             </Field>
-            <Field label="Amount per day" hint="Written the way you'd tell a sitter.">
-              <input className="input" value={values.amountPerDay} onChange={(e) => set({ amountPerDay: e.target.value })} placeholder="55 g" />
+            <Field label={t('food.amountPerDay')} hint={t('food.amountHint')}>
+              <input
+                className="input"
+                value={values.amountPerDay}
+                onChange={(e) => set({ amountPerDay: e.target.value })}
+                placeholder={t('food.amountPlaceholder')}
+              />
             </Field>
-            <Field label="Meals per day">
+            <Field label={t('food.mealsPerDay')}>
               <input
                 type="number"
                 min="1"
@@ -115,7 +141,7 @@ export default function FoodPage() {
                 onChange={(e) => set({ timesPerDay: numberOrNull(e.target.value) })}
               />
             </Field>
-            <Field label="Cost per unit (€)">
+            <Field label={t('food.costPerUnit')}>
               <input
                 type="number"
                 step="0.01"
@@ -125,13 +151,13 @@ export default function FoodPage() {
                 onChange={(e) => set({ cost: numberOrNull(e.target.value) })}
               />
             </Field>
-            <Field label="Started">
+            <Field label={t('food.started')}>
               <input type="date" className="input" value={values.startDate} onChange={(e) => set({ startDate: e.target.value })} />
             </Field>
-            <Field label="Stopped">
+            <Field label={t('food.stoppedDate')}>
               <input type="date" className="input" value={values.endDate} onChange={(e) => set({ endDate: e.target.value })} />
             </Field>
-            <Field label="How well they took to it (0–5)">
+            <Field label={t('food.ratingLabel')}>
               <input
                 type="number"
                 min="0"
@@ -143,15 +169,15 @@ export default function FoodPage() {
             </Field>
           </div>
 
-          <Checkbox label="Currently feeding this" checked={values.current} onChange={(current) => set({ current })} />
+          <Checkbox label={t('food.currentlyFeeding')} checked={values.current} onChange={(current) => set({ current })} />
 
-          <Field label="Tolerance / reaction" hint="Sickness, itching, refusal — anything worth remembering before buying it again.">
+          <Field label={t('food.tolerance')} hint={t('food.toleranceHint')}>
             <textarea className="input min-h-16" value={values.tolerance} onChange={(e) => set({ tolerance: e.target.value })} />
           </Field>
-          <Field label="Notes">
+          <Field label={t('common.notes')}>
             <textarea className="input min-h-16" value={values.notes} onChange={(e) => set({ notes: e.target.value })} />
           </Field>
-          <Field label="Attachments" hint="Photo of the label or the ingredients list.">
+          <Field label={t('common.attachments')} hint={t('food.attachmentsHint')}>
             <AttachmentField value={values.attachments} onChange={(attachments) => set({ attachments })} />
           </Field>
         </>

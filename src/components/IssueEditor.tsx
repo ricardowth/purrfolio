@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
 import { useData } from '@/store/DataContext';
-import { ApiError } from '@/lib/api';
+import { ApiError, apiMessage, translateFieldErrors } from '@/lib/api';
 import { CatBody, type PartSelection } from '@/anatomy/CatBody';
-import { REGIONS, REGIONS_BY_ID, describePart } from '@/anatomy/regions';
+import { REGIONS, REGIONS_BY_ID, describePart, regionLabel } from '@/anatomy/regions';
 import { AttachmentField } from '@/components/AttachmentField';
 import { ErrorNote, Field, Modal, Select, cx } from '@/components/ui';
+import { useI18n } from '@/lib/i18n';
 import { today } from '@/lib/format';
 import { stripMeta, type FormValues } from '@/lib/forms';
 import { ISSUE_STATUSES, SEVERITIES } from '@shared/schema.js';
@@ -44,6 +45,8 @@ export function IssueEditor({
   onSaved?: (issue: Issue) => void;
 }) {
   const { petId, forPet, create, save } = useData();
+  const i18n = useI18n();
+  const { t } = i18n;
   const issues = forPet('issues');
 
   const [values, setValues] = useState<Values>(() => blank(petId, initialPart));
@@ -83,10 +86,10 @@ export function IssueEditor({
       onClose();
     } catch (err) {
       if (err instanceof ApiError && err.issues.length) {
-        setErrors(err.byField);
-        setFormError('Please fix the highlighted fields.');
+        setErrors(translateFieldErrors(err.byField, i18n));
+        setFormError(t('common.fixFields'));
       } else {
-        setFormError(err instanceof Error ? err.message : 'Could not save');
+        setFormError(apiMessage(err, i18n, 'common.couldNotSave'));
       }
     } finally {
       setSubmitting(false);
@@ -98,23 +101,23 @@ export function IssueEditor({
   return (
     <Modal
       open={open}
-      title={issue ? 'Edit health issue' : 'New health issue'}
+      title={issue ? t('issueEditor.editTitle') : t('issueEditor.newTitle')}
       onClose={onClose}
       wide
       footer={
         <>
           <button type="button" className="btn-ghost" onClick={onClose}>
-            Cancel
+            {t('common.cancel')}
           </button>
           <button type="button" className="btn-primary" onClick={() => void submit()} disabled={submitting}>
-            {submitting ? 'Saving…' : 'Save issue'}
+            {submitting ? t('common.saving') : t('issueEditor.saveIssue')}
           </button>
         </>
       }
     >
       <div className="grid gap-6 md:grid-cols-2">
         <div>
-          <span className="label">Where is it?</span>
+          <span className="label">{t('issueEditor.where')}</span>
           <div className="mb-2 flex items-center justify-between gap-2">
             <div className="inline-flex overflow-hidden rounded-lg border border-stone-300 text-xs dark:border-stone-700">
               {(['left', 'right'] as const).map((side) => (
@@ -127,7 +130,7 @@ export function IssueEditor({
                     viewSide === side ? 'bg-amber-600 text-white' : 'bg-white text-stone-600 dark:bg-stone-900 dark:text-stone-400',
                   )}
                 >
-                  {side === 'left' ? 'Left side' : 'Right side'}
+                  {side === 'left' ? t('body.leftSide') : t('body.rightSide')}
                 </button>
               ))}
             </div>
@@ -136,7 +139,7 @@ export function IssueEditor({
               onClick={() => setShowInternal((prev) => !prev)}
               className={cx('btn text-xs', showInternal ? 'btn-primary' : 'btn-ghost')}
             >
-              Organs
+              {t('body.organs')}
             </button>
           </div>
 
@@ -162,21 +165,22 @@ export function IssueEditor({
                     : 'bg-stone-200 text-stone-700 hover:bg-stone-300 dark:bg-stone-800 dark:text-stone-300',
                 )}
               >
-                {item.label}
+                {regionLabel(i18n, item.id)}
               </button>
             ))}
           </div>
 
           <p className="mt-2 text-sm">
-            <span className="text-stone-500">Selected: </span>
-            <span className="font-medium text-stone-900 dark:text-stone-100">{describePart(values.bodyPart, values.side)}</span>
+            <span className="text-stone-500">{t('issueEditor.selected')}</span>
+            <span className="font-medium text-stone-900 dark:text-stone-100">{describePart(i18n, values.bodyPart, values.side)}</span>
           </p>
           {errors.bodyPart && <p className="mt-1 text-xs font-medium text-red-600">{errors.bodyPart}</p>}
 
           {region?.sided && (
-            <Field label="Side" className="mt-3">
+            <Field label={t('issueEditor.side')} className="mt-3">
               <Select
                 options={['left', 'right', 'none']}
+                group="side"
                 value={values.side}
                 onChange={(e) => {
                   const side = e.target.value as Side;
@@ -191,22 +195,28 @@ export function IssueEditor({
         <div className="space-y-4">
           {formError && <ErrorNote>{formError}</ErrorNote>}
 
-          <Field label="Title" error={errors.title}>
+          <Field label={t('issueEditor.titleLabel')} error={errors.title}>
             <input
               className="input"
               value={values.title}
               onChange={(e) => set({ title: e.target.value })}
-              placeholder="Limping after jumping down"
+              placeholder={t('issueEditor.titlePlaceholder')}
             />
           </Field>
 
           <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="Severity">
-              <Select options={SEVERITIES} value={values.severity} onChange={(e) => set({ severity: e.target.value as Values['severity'] })} />
+            <Field label={t('issueEditor.severity')}>
+              <Select
+                options={SEVERITIES}
+                group="severity"
+                value={values.severity}
+                onChange={(e) => set({ severity: e.target.value as Values['severity'] })}
+              />
             </Field>
-            <Field label="Status">
+            <Field label={t('issueEditor.status')}>
               <Select
                 options={ISSUE_STATUSES}
+                group="issueStatus"
                 value={values.status}
                 onChange={(e) => {
                   const status = e.target.value as Values['status'];
@@ -214,10 +224,10 @@ export function IssueEditor({
                 }}
               />
             </Field>
-            <Field label="First noticed">
+            <Field label={t('issueEditor.firstNoticed')}>
               <input type="date" className="input" value={values.onsetDate} onChange={(e) => set({ onsetDate: e.target.value })} />
             </Field>
-            <Field label="Resolved on">
+            <Field label={t('issueEditor.resolvedOn')}>
               <input
                 type="date"
                 className="input"
@@ -228,15 +238,15 @@ export function IssueEditor({
             </Field>
           </div>
 
-          <Field label="What you're seeing">
+          <Field label={t('issueEditor.whatSeeing')}>
             <textarea className="input min-h-24" value={values.description} onChange={(e) => set({ description: e.target.value })} />
           </Field>
 
-          <Field label="Diagnosis" hint="Fill this in once the vet has told you what it is.">
+          <Field label={t('issueEditor.diagnosis')} hint={t('issueEditor.diagnosisHint')}>
             <textarea className="input min-h-16" value={values.diagnosis} onChange={(e) => set({ diagnosis: e.target.value })} />
           </Field>
 
-          <Field label="Photos & files">
+          <Field label={t('issueEditor.photosFiles')}>
             <AttachmentField value={values.attachments} onChange={(attachments) => set({ attachments })} />
           </Field>
         </div>

@@ -18,10 +18,51 @@ function validationError(res, err) {
 }
 
 /**
+ * Keeps the weigh-in generated from an appointment's `weightKg` in step with the
+ * appointment: created on first save, updated when the value or date changes,
+ * and removed when the value is cleared. Runs inside the store lock, so the
+ * appointment and its weigh-in are always written together.
+ */
+function syncAppointmentWeight(db, appointment) {
+  const existing = appointment.weightId ? db.weights.find((w) => w.id === appointment.weightId) : null;
+  const date = (appointment.dateTime || '').slice(0, 10);
+
+  if (appointment.weightKg && date) {
+    if (existing) {
+      existing.kg = appointment.weightKg;
+      existing.date = date;
+      existing.updatedAt = now();
+      return;
+    }
+    const stamp = now();
+    const weight = {
+      id: randomUUID(),
+      petId: appointment.petId,
+      date,
+      kg: appointment.weightKg,
+      notes: '',
+      createdAt: stamp,
+      updatedAt: stamp,
+    };
+    db.weights.push(weight);
+    appointment.weightId = weight.id;
+    return;
+  }
+
+  if (existing) {
+    db.weights = db.weights.filter((w) => w.id !== existing.id);
+  }
+  appointment.weightId = '';
+}
+
+/** Extra bookkeeping some collections need after a record is written. */
+const AFTER_WRITE = { appointments: syncAppointmentWeight };
+
+/**
  * Removes references to a deleted record so the database never points at
  * something that no longer exists.
  */
-function cascade(db, collection, id) {
+function cascade(db, collection, id, removed) {
   if (collection === 'pets') {
     for (const name of PET_SCOPED) db[name] = db[name].filter((r) => r.petId !== id);
     return;
@@ -34,8 +75,29 @@ function cascade(db, collection, id) {
     }
     return;
   }
+  // An appointment owns the weigh-in it generated, so that goes with it.
+  if (collection === 'appointments') {
+    if (removed?.weightId) db.weights = db.weights.filter((w) => w.id !== removed.weightId);
+    return;
+  }
+  if (collection === 'medications' || collection === 'foods') {
+    const key = collection === 'medications' ? 'medicationIds' : 'foodIds';
+    for (const record of db.appointments) {
+      if (record[key]?.includes(id)) record[key] = record[key].filter((x) => x !== id);
+    }
+    return;
+  }
+  // A weigh-in deleted on its own leaves the appointment free to generate a new one.
+  if (collection === 'weights') {
+    for (const record of db.appointments) if (record.weightId === id) record.weightId = '';
+    return;
+  }
   if (collection === 'contacts') {
-    const fields = { appointments: ['contactId'], vaccinations: ['contactId'], careEvents: ['caregiverId', 'emergencyContactId'] };
+    const fields = {
+      appointments: ['contactId', 'clinicId'],
+      vaccinations: ['contactId', 'clinicId'],
+      careEvents: ['caregiverId', 'emergencyContactId'],
+    };
     for (const [name, keys] of Object.entries(fields)) {
       for (const record of db[name]) {
         for (const key of keys) if (record[key] === id) record[key] = '';
@@ -76,6 +138,7 @@ export function crudRouter() {
     const record = { ...parsed.data, id: randomUUID(), createdAt: stamp, updatedAt: stamp };
     await update((db) => {
       db[req.collection].push(record);
+      AFTER_WRITE[req.collection]?.(db, record);
       return { result: record };
     });
     res.status(201).json(record);
@@ -90,9 +153,12 @@ export function crudRouter() {
     if (!parsed.success) return validationError(res, parsed.error);
 
     const record = { ...parsed.data, id: existing.id, createdAt: existing.createdAt, updatedAt: now() };
+    // Links the server owns are taken from the stored record, never the client.
+    if (req.collection === 'appointments') record.weightId = existing.weightId ?? '';
     await update((db) => {
       const rows = db[req.collection];
       rows[rows.findIndex((r) => r.id === record.id)] = record;
+      AFTER_WRITE[req.collection]?.(db, record);
       return { result: record };
     });
     res.json(record);
@@ -106,7 +172,7 @@ export function crudRouter() {
       const index = rows.findIndex((r) => r.id === id);
       if (index === -1) return { result: null };
       const [row] = rows.splice(index, 1);
-      cascade(db, collection, id);
+      cascade(db, collection, id, row);
       return { result: row };
     });
     if (!removed) return res.status(404).json({ error: 'Not found' });

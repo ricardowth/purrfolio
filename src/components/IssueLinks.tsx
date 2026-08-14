@@ -1,21 +1,26 @@
 import { Link } from 'react-router-dom';
 import { useData } from '@/store/DataContext';
+import { useI18n } from '@/lib/i18n';
 import { Badge, SEVERITY_TONE } from '@/components/ui';
 import { describePart } from '@/anatomy/regions';
 
 /** Checkbox list for linking a record to the health issues it relates to. */
 export function IssuePicker({ value, onChange }: { value: string[]; onChange: (ids: string[]) => void }) {
   const { forPet } = useData();
+  const i18n = useI18n();
   const issues = forPet('issues');
 
   if (issues.length === 0) {
+    // The sentence wraps a link, so it is split around the {link} placeholder
+    // rather than being assembled from fragments that would not reorder.
+    const [before, after] = i18n.t('issueLinks.none').split('{link}');
     return (
       <p className="text-sm text-stone-500 dark:text-stone-400">
-        No health issues recorded yet — add one on the{' '}
+        {before}
         <Link to="/health" className="link">
-          health map
+          {i18n.t('issueLinks.healthMap')}
         </Link>
-        .
+        {after}
       </p>
     );
   }
@@ -33,7 +38,7 @@ export function IssuePicker({ value, onChange }: { value: string[]; onChange: (i
             className="size-4 rounded border-stone-300 text-amber-600 focus:ring-amber-500/40 dark:border-stone-600 dark:bg-stone-900"
           />
           <span className="flex-1 truncate">{issue.title}</span>
-          <span className="text-xs text-stone-500">{describePart(issue.bodyPart, issue.side)}</span>
+          <span className="text-xs text-stone-500">{describePart(i18n, issue.bodyPart, issue.side)}</span>
         </label>
       ))}
     </div>

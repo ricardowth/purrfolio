@@ -2,7 +2,8 @@ import { useCallback, useState, type ReactNode } from 'react';
 import { Pencil, Plus, Trash2 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useData } from '@/store/DataContext';
-import { ApiError } from '@/lib/api';
+import { useI18n } from '@/lib/i18n';
+import { ApiError, apiMessage, translateFieldErrors } from '@/lib/api';
 import { ConfirmDialog, EmptyState, ErrorNote, Modal, PageHeader, cx } from '@/components/ui';
 import type { CollectionName } from '@shared/types';
 
@@ -67,6 +68,8 @@ export function ResourcePage<T extends { id: string }, V extends Record<string, 
   children,
 }: ResourcePageProps<T, V>) {
   const { create, save, remove } = useData();
+  const i18n = useI18n();
+  const { t } = i18n;
 
   const [editing, setEditing] = useState<T | 'new' | null>(null);
   const [values, setValues] = useState<V | null>(null);
@@ -107,10 +110,10 @@ export function ResourcePage<T extends { id: string }, V extends Record<string, 
       close();
     } catch (err) {
       if (err instanceof ApiError && err.issues.length) {
-        setErrors(err.byField);
-        setFormError('Please fix the highlighted fields.');
+        setErrors(translateFieldErrors(err.byField, i18n));
+        setFormError(t('common.fixFields'));
       } else {
-        setFormError(err instanceof Error ? err.message : 'Could not save');
+        setFormError(apiMessage(err, i18n, 'common.couldNotSave'));
       }
     } finally {
       setSubmitting(false);
@@ -183,14 +186,14 @@ export function ResourcePage<T extends { id: string }, V extends Record<string, 
                   ))}
                   <td className="px-2 py-2 text-right whitespace-nowrap">
                     {rowActions?.(row)}
-                    <button type="button" className="btn-subtle px-2 py-1" onClick={() => openEdit(row)} aria-label="Edit">
+                    <button type="button" className="btn-subtle px-2 py-1" onClick={() => openEdit(row)} aria-label={t('common.edit')}>
                       <Pencil className="size-4" />
                     </button>
                     <button
                       type="button"
                       className="btn-subtle px-2 py-1 hover:text-red-600"
                       onClick={() => setPendingDelete(row)}
-                      aria-label="Delete"
+                      aria-label={t('common.delete')}
                     >
                       <Trash2 className="size-4" />
                     </button>
@@ -204,16 +207,16 @@ export function ResourcePage<T extends { id: string }, V extends Record<string, 
 
       <Modal
         open={editing !== null}
-        title={editing === 'new' ? addLabel : `Edit ${title.replace(/s$/, '').toLowerCase()}`}
+        title={editing === 'new' ? addLabel : t('resource.editRecord')}
         onClose={close}
         wide={wideModal}
         footer={
           <>
             <button type="button" className="btn-ghost" onClick={close}>
-              Cancel
+              {t('common.cancel')}
             </button>
             <button type="button" className="btn-primary" onClick={() => void submit()} disabled={submitting}>
-              {submitting ? 'Saving…' : 'Save'}
+              {submitting ? t('common.saving') : t('common.save')}
             </button>
           </>
         }
@@ -236,8 +239,8 @@ export function ResourcePage<T extends { id: string }, V extends Record<string, 
 
       <ConfirmDialog
         open={pendingDelete !== null}
-        title="Delete this record?"
-        message={pendingDelete ? `“${describe(pendingDelete)}” will be permanently removed. This cannot be undone.` : ''}
+        title={t('resource.deleteTitle')}
+        message={pendingDelete ? t('resource.deleteMessage', { name: describe(pendingDelete) }) : ''}
         onConfirm={() => void confirmDelete()}
         onCancel={() => setPendingDelete(null)}
       />

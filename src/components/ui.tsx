@@ -1,5 +1,6 @@
 import { useEffect, type ReactNode } from 'react';
 import { AlertTriangle, Loader2, X } from 'lucide-react';
+import { useI18n } from '@/lib/i18n';
 
 export const cx = (...parts: (string | false | null | undefined)[]) => parts.filter(Boolean).join(' ');
 
@@ -28,11 +29,12 @@ export function EmptyState({ icon: Icon, title, message, action }: { icon?: type
   );
 }
 
-export function Spinner({ label = 'Loading…' }: { label?: string }) {
+export function Spinner({ label }: { label?: string }) {
+  const { t } = useI18n();
   return (
     <div className="flex items-center gap-2 py-10 text-sm text-stone-500">
       <Loader2 className="size-4 animate-spin" />
-      {label}
+      {label ?? t('common.loading')}
     </div>
   );
 }
@@ -71,12 +73,22 @@ export function Field({
   );
 }
 
-export function Select({ options, ...props }: { options: readonly string[] } & React.SelectHTMLAttributes<HTMLSelectElement>) {
+/**
+ * Enum dropdown. `options` are the values stored in data.json (always English);
+ * `group` names the `enum.<group>.*` block that supplies the visible labels, so
+ * changing language relabels the options without touching the stored value.
+ */
+export function Select({
+  options,
+  group,
+  ...props
+}: { options: readonly string[]; group: string } & React.SelectHTMLAttributes<HTMLSelectElement>) {
+  const { tEnum } = useI18n();
   return (
     <select {...props} className={cx('input', props.className)}>
       {options.map((option) => (
         <option key={option} value={option}>
-          {option.charAt(0).toUpperCase() + option.slice(1)}
+          {tEnum(group, option)}
         </option>
       ))}
     </select>
@@ -114,6 +126,8 @@ export function Modal({
   footer?: ReactNode;
   wide?: boolean;
 }) {
+  const { t } = useI18n();
+
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
@@ -139,7 +153,7 @@ export function Modal({
       >
         <div className="flex items-center justify-between border-b border-stone-200 px-5 py-3.5 dark:border-stone-800">
           <h2 className="font-semibold text-stone-900 dark:text-stone-50">{title}</h2>
-          <button type="button" onClick={onClose} className="btn-subtle -mr-2 px-2 py-1" aria-label="Close">
+          <button type="button" onClick={onClose} className="btn-subtle -mr-2 px-2 py-1" aria-label={t('common.close')}>
             <X className="size-4" />
           </button>
         </div>
@@ -156,7 +170,7 @@ export function ConfirmDialog({
   open,
   title,
   message,
-  confirmLabel = 'Delete',
+  confirmLabel,
   onConfirm,
   onCancel,
 }: {
@@ -167,6 +181,7 @@ export function ConfirmDialog({
   onConfirm: () => void;
   onCancel: () => void;
 }) {
+  const { t } = useI18n();
   return (
     <Modal
       open={open}
@@ -175,10 +190,10 @@ export function ConfirmDialog({
       footer={
         <>
           <button type="button" className="btn-ghost" onClick={onCancel}>
-            Cancel
+            {t('common.cancel')}
           </button>
           <button type="button" className="btn-danger" onClick={onConfirm}>
-            {confirmLabel}
+            {confirmLabel ?? t('common.delete')}
           </button>
         </>
       }
