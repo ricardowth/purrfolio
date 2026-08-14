@@ -1,0 +1,382 @@
+{
+  "version": 1,
+  "pets": [
+    {
+      "id": "11111111-1111-4111-8111-000000000001",
+      "name": "Mochi",
+      "species": "cat",
+      "breed": "Domestic shorthair",
+      "colour": "Ginger tabby, white chest",
+      "sex": "male",
+      "neutered": true,
+      "birthDate": "2021-04-18",
+      "adoptionDate": "2021-07-02",
+      "microchip": "941000024681357",
+      "insurer": "",
+      "policyNumber": "",
+      "allergies": ["chicken"],
+      "quirks": "Hides under the sofa when the doorbell rings — give him ten minutes and he comes out on his own.\nTakes pills wrapped in a bit of wet food; will not accept them any other way.\nDo not let him out on the balcony unsupervised.",
+      "photo": "",
+      "notes": "Sample data — replace it with your own pet from the Pets page.",
+      "archived": false,
+      "createdAt": "2025-01-05T10:00:00.000Z",
+      "updatedAt": "2025-01-05T10:00:00.000Z"
+    }
+  ],
+  "issues": [
+    {
+      "id": "22222222-2222-4222-8222-000000000001",
+      "petId": "11111111-1111-4111-8111-000000000001",
+      "title": "Limping on the back left leg",
+      "bodyPart": "hind-leg-lower",
+      "side": "left",
+      "severity": "medium",
+      "status": "monitoring",
+      "onsetDate": "2026-07-28",
+      "resolvedDate": "",
+      "description": "Started after jumping down from the wardrobe. Holds the paw up for a few seconds after standing, then walks it off. No swelling I can feel, no reaction when I touch it.",
+      "diagnosis": "Vet suspects a soft tissue strain. X-ray clear. Rest and anti-inflammatories for ten days, review if still limping after that.",
+      "updates": [
+        {
+          "id": "22222222-2222-4222-8222-100000000001",
+          "date": "2026-08-02",
+          "note": "Four days into the Metacam. Limping much less obvious in the morning, still noticeable after a long nap.",
+          "attachments": []
+        },
+        {
+          "id": "22222222-2222-4222-8222-100000000002",
+          "date": "2026-08-10",
+          "note": "Jumped onto the windowsill unprompted for the first time since it started. Still favouring the leg slightly on stairs.",
+          "attachments": []
+        }
+      ],
+      "appointmentIds": ["33333333-3333-4333-8333-000000000002"],
+      "medicationIds": [],
+      "attachments": [],
+      "createdAt": "2026-07-28T19:20:00.000Z",
+      "updatedAt": "2026-08-10T09:15:00.000Z"
+    },
+    {
+      "id": "22222222-2222-4222-8222-000000000002",
+      "petId": "11111111-1111-4111-8111-000000000001",
+      "title": "Ear mites",
+      "bodyPart": "ear",
+      "side": "right",
+      "severity": "low",
+      "status": "resolved",
+      "onsetDate": "2025-09-12",
+      "resolvedDate": "2025-10-05",
+      "description": "Constant scratching at the right ear and dark, gritty discharge.",
+      "diagnosis": "Ear mites confirmed on swab. Treated with a single spot-on dose plus ear drops for a week.",
+      "updates": [
+        {
+          "id": "22222222-2222-4222-8222-200000000001",
+          "date": "2025-10-05",
+          "note": "Ear clean, no scratching for two weeks. Considering this closed.",
+          "attachments": []
+        }
+      ],
+      "appointmentIds": [],
+      "medicationIds": [],
+      "attachments": [],
+      "createdAt": "2025-09-12T18:00:00.000Z",
+      "updatedAt": "2025-10-05T11:00:00.000Z"
+    }
+  ],
+  "appointments": [
+    {
+      "id": "33333333-3333-4333-8333-000000000001",
+      "petId": "11111111-1111-4111-8111-000000000001",
+      "dateTime": "2026-03-14T10:30",
+      "type": "checkup",
+      "status": "completed",
+      "contactId": "44444444-4444-4444-8444-000000000001",
+      "clinic": "Clínica Veterinária do Parque",
+      "reason": "Annual health check and booster.",
+      "outcome": "Everything normal. Teeth starting to show a little tartar — worth a dental in the next year or so.",
+      "cost": 62.5,
+      "weightKg": 4.8,
+      "followUpDate": "",
+      "issueIds": [],
+      "notes": "",
+      "attachments": [],
+      "createdAt": "2026-03-14T12:00:00.000Z",
+      "updatedAt": "2026-03-14T12:00:00.000Z"
+    },
+    {
+      "id": "33333333-3333-4333-8333-000000000002",
+      "petId": "11111111-1111-4111-8111-000000000001",
+      "dateTime": "2026-07-29T17:00",
+      "type": "emergency",
+      "status": "completed",
+      "contactId": "44444444-4444-4444-8444-000000000001",
+      "clinic": "Clínica Veterinária do Parque",
+      "reason": "Limping on the back left leg since yesterday evening.",
+      "outcome": "X-ray clear, no fracture. Diagnosed as a soft tissue strain. Metacam for ten days, keep him off high furniture, review if no improvement.",
+      "cost": 118.0,
+      "weightKg": 4.9,
+      "followUpDate": "2026-08-15",
+      "issueIds": ["22222222-2222-4222-8222-000000000001"],
+      "notes": "",
+      "attachments": [],
+      "createdAt": "2026-07-29T19:30:00.000Z",
+      "updatedAt": "2026-07-29T19:30:00.000Z"
+    },
+    {
+      "id": "33333333-3333-4333-8333-000000000003",
+      "petId": "11111111-1111-4111-8111-000000000001",
+      "dateTime": "2026-08-22T11:00",
+      "type": "checkup",
+      "status": "scheduled",
+      "contactId": "44444444-4444-4444-8444-000000000001",
+      "clinic": "Clínica Veterinária do Parque",
+      "reason": "Follow-up on the back leg.",
+      "outcome": "",
+      "cost": null,
+      "weightKg": null,
+      "followUpDate": "",
+      "issueIds": ["22222222-2222-4222-8222-000000000001"],
+      "notes": "",
+      "attachments": [],
+      "createdAt": "2026-07-29T19:35:00.000Z",
+      "updatedAt": "2026-07-29T19:35:00.000Z"
+    }
+  ],
+  "vaccinations": [
+    {
+      "id": "55555555-5555-4555-8555-000000000001",
+      "petId": "11111111-1111-4111-8111-000000000001",
+      "name": "Rabies",
+      "date": "2025-09-02",
+      "nextDueDate": "2026-09-02",
+      "batchNumber": "RB-2291-A",
+      "contactId": "44444444-4444-4444-8444-000000000001",
+      "clinic": "Clínica Veterinária do Parque",
+      "cost": 24.0,
+      "notes": "",
+      "attachments": [],
+      "createdAt": "2025-09-02T11:00:00.000Z",
+      "updatedAt": "2025-09-02T11:00:00.000Z"
+    },
+    {
+      "id": "55555555-5555-4555-8555-000000000002",
+      "petId": "11111111-1111-4111-8111-000000000001",
+      "name": "FVRCP (tricat)",
+      "date": "2026-03-14",
+      "nextDueDate": "2027-03-14",
+      "batchNumber": "TC-8814-K",
+      "contactId": "44444444-4444-4444-8444-000000000001",
+      "clinic": "Clínica Veterinária do Parque",
+      "cost": 31.0,
+      "notes": "Given at the annual checkup.",
+      "attachments": [],
+      "createdAt": "2026-03-14T12:05:00.000Z",
+      "updatedAt": "2026-03-14T12:05:00.000Z"
+    }
+  ],
+  "medications": [
+    {
+      "id": "66666666-6666-4666-8666-000000000001",
+      "petId": "11111111-1111-4111-8111-000000000001",
+      "name": "Metacam 0.5 mg/ml oral suspension",
+      "dose": "0.5 ml",
+      "route": "oral",
+      "frequency": "once daily, after food",
+      "timesPerDay": 1,
+      "startDate": "2026-07-29",
+      "endDate": "2026-08-08",
+      "ongoing": false,
+      "reason": "Soft tissue strain in the back left leg",
+      "prescribedBy": "Dr. Ana Marques",
+      "cost": 19.4,
+      "issueIds": ["22222222-2222-4222-8222-000000000001"],
+      "doseLog": [],
+      "notes": "Never give on an empty stomach.",
+      "attachments": [],
+      "createdAt": "2026-07-29T20:00:00.000Z",
+      "updatedAt": "2026-08-08T09:00:00.000Z"
+    },
+    {
+      "id": "66666666-6666-4666-8666-000000000002",
+      "petId": "11111111-1111-4111-8111-000000000001",
+      "name": "Broadline spot-on",
+      "dose": "1 pipette",
+      "route": "topical",
+      "frequency": "monthly, first of the month",
+      "timesPerDay": null,
+      "startDate": "2025-01-01",
+      "endDate": "",
+      "ongoing": true,
+      "reason": "Routine flea and worm prevention",
+      "prescribedBy": "Dr. Ana Marques",
+      "cost": 14.5,
+      "issueIds": [],
+      "doseLog": [{ "id": "66666666-6666-4666-8666-100000000001", "at": "2026-08-01T08:30:00.000Z", "note": "" }],
+      "notes": "Between the shoulder blades so he can't lick it off.",
+      "attachments": [],
+      "createdAt": "2025-01-01T09:00:00.000Z",
+      "updatedAt": "2026-08-01T08:30:00.000Z"
+    }
+  ],
+  "foods": [
+    {
+      "id": "77777777-7777-4777-8777-000000000001",
+      "petId": "11111111-1111-4111-8111-000000000001",
+      "brand": "Royal Canin",
+      "product": "Sterilised 37 (dry)",
+      "type": "dry",
+      "amountPerDay": "55 g",
+      "timesPerDay": 2,
+      "startDate": "2025-02-01",
+      "endDate": "",
+      "current": true,
+      "cost": 34.9,
+      "rating": 4,
+      "tolerance": "No problems. Leaves some in the bowl if given more than 30 g at once.",
+      "notes": "Half in the morning, half in the evening.",
+      "attachments": [],
+      "createdAt": "2025-02-01T08:00:00.000Z",
+      "updatedAt": "2025-02-01T08:00:00.000Z"
+    },
+    {
+      "id": "77777777-7777-4777-8777-000000000002",
+      "petId": "11111111-1111-4111-8111-000000000001",
+      "brand": "Applaws",
+      "product": "Tuna fillet in broth",
+      "type": "wet",
+      "amountPerDay": "1 pouch",
+      "timesPerDay": 1,
+      "startDate": "2025-06-10",
+      "endDate": "",
+      "current": true,
+      "cost": 1.2,
+      "rating": 5,
+      "tolerance": "Fine. This is what the pills go in.",
+      "notes": "Evening only.",
+      "attachments": [],
+      "createdAt": "2025-06-10T08:00:00.000Z",
+      "updatedAt": "2025-06-10T08:00:00.000Z"
+    },
+    {
+      "id": "77777777-7777-4777-8777-000000000003",
+      "petId": "11111111-1111-4111-8111-000000000001",
+      "brand": "Purina",
+      "product": "One Chicken (dry)",
+      "type": "dry",
+      "amountPerDay": "60 g",
+      "timesPerDay": 2,
+      "startDate": "2024-05-01",
+      "endDate": "2025-01-28",
+      "current": false,
+      "cost": 21.0,
+      "rating": 1,
+      "tolerance": "Vomiting two or three times a week. Stopped it and the vomiting stopped — this is how we found the chicken allergy.",
+      "notes": "",
+      "attachments": [],
+      "createdAt": "2024-05-01T08:00:00.000Z",
+      "updatedAt": "2025-01-28T08:00:00.000Z"
+    }
+  ],
+  "weights": [
+    { "id": "88888888-8888-4888-8888-000000000001", "petId": "11111111-1111-4111-8111-000000000001", "date": "2025-03-15", "kg": 4.4, "notes": "At the clinic", "createdAt": "2025-03-15T11:00:00.000Z", "updatedAt": "2025-03-15T11:00:00.000Z" },
+    { "id": "88888888-8888-4888-8888-000000000002", "petId": "11111111-1111-4111-8111-000000000001", "date": "2025-09-02", "kg": 4.6, "notes": "", "createdAt": "2025-09-02T11:00:00.000Z", "updatedAt": "2025-09-02T11:00:00.000Z" },
+    { "id": "88888888-8888-4888-8888-000000000003", "petId": "11111111-1111-4111-8111-000000000001", "date": "2026-03-14", "kg": 4.8, "notes": "Annual checkup", "createdAt": "2026-03-14T11:00:00.000Z", "updatedAt": "2026-03-14T11:00:00.000Z" },
+    { "id": "88888888-8888-4888-8888-000000000004", "petId": "11111111-1111-4111-8111-000000000001", "date": "2026-07-29", "kg": 4.9, "notes": "Weighed at the emergency visit", "createdAt": "2026-07-29T19:00:00.000Z", "updatedAt": "2026-07-29T19:00:00.000Z" }
+  ],
+  "careEvents": [
+    {
+      "id": "99999999-9999-4999-8999-000000000001",
+      "petId": "11111111-1111-4111-8111-000000000001",
+      "title": "Two weeks in the Algarve",
+      "type": "sitter",
+      "startDate": "2026-08-29",
+      "endDate": "2026-09-12",
+      "caregiverId": "44444444-4444-4444-8444-000000000002",
+      "emergencyContactId": "44444444-4444-4444-8444-000000000001",
+      "instructions": "Litter tray is in the laundry room — scoop every day, full change on the Sunday.\nDry food twice a day, wet pouch in the evening.\nSpare key with the neighbour at no. 12 (Sr. Costa).\nHe will hide for the first day. That is normal, don't chase him.\nWater fountain needs refilling every second day.",
+      "cost": 180.0,
+      "notes": "",
+      "attachments": [],
+      "createdAt": "2026-07-10T20:00:00.000Z",
+      "updatedAt": "2026-07-10T20:00:00.000Z"
+    }
+  ],
+  "contacts": [
+    {
+      "id": "44444444-4444-4444-8444-000000000001",
+      "name": "Dr. Ana Marques",
+      "role": "vet",
+      "organisation": "Clínica Veterinária do Parque",
+      "phone": "+351 212 345 678",
+      "email": "geral@cvparque.pt",
+      "address": "Rua das Amoreiras 14, Lisboa",
+      "hours": "Mon–Fri 09:00–19:00, Sat 09:00–13:00",
+      "notes": "Ask for Dr. Ana — she has seen him since he was a kitten.",
+      "createdAt": "2025-01-05T10:05:00.000Z",
+      "updatedAt": "2025-01-05T10:05:00.000Z"
+    },
+    {
+      "id": "44444444-4444-4444-8444-000000000002",
+      "name": "Sofia Rodrigues",
+      "role": "sitter",
+      "organisation": "",
+      "phone": "+351 918 000 111",
+      "email": "sofia.r@example.com",
+      "address": "",
+      "hours": "",
+      "notes": "Has sat for him twice before. He likes her.",
+      "createdAt": "2025-07-01T10:00:00.000Z",
+      "updatedAt": "2025-07-01T10:00:00.000Z"
+    },
+    {
+      "id": "44444444-4444-4444-8444-000000000003",
+      "name": "Hospital Veterinário 24h",
+      "role": "emergency",
+      "organisation": "",
+      "phone": "+351 213 999 000",
+      "email": "",
+      "address": "Av. da República 200, Lisboa",
+      "hours": "24 hours, every day",
+      "notes": "Out-of-hours emergencies only. About 15 minutes by car.",
+      "createdAt": "2025-01-05T10:10:00.000Z",
+      "updatedAt": "2025-01-05T10:10:00.000Z"
+    }
+  ],
+  "journal": [
+    {
+      "id": "aaaaaaaa-aaaa-4aaa-8aaa-000000000001",
+      "petId": "11111111-1111-4111-8111-000000000001",
+      "date": "2026-08-03",
+      "title": "Off his food for a day",
+      "text": "Barely touched breakfast or dinner. Drinking normally, using the tray normally, no vomiting. Back to eating properly the next morning — noting it in case it becomes a pattern.",
+      "tags": ["symptom", "behaviour"],
+      "attachments": [],
+      "createdAt": "2026-08-03T21:00:00.000Z",
+      "updatedAt": "2026-08-03T21:00:00.000Z"
+    },
+    {
+      "id": "aaaaaaaa-aaaa-4aaa-8aaa-000000000002",
+      "petId": "11111111-1111-4111-8111-000000000001",
+      "date": "2026-06-21",
+      "title": "Five years in the flat",
+      "text": "Anniversary of the day we brought him home. He spent it asleep in the sun on the bedroom floor, which feels about right.",
+      "tags": ["milestone"],
+      "attachments": [],
+      "createdAt": "2026-06-21T19:00:00.000Z",
+      "updatedAt": "2026-06-21T19:00:00.000Z"
+    }
+  ],
+  "documents": [
+    {
+      "id": "bbbbbbbb-bbbb-4bbb-8bbb-000000000001",
+      "petId": "11111111-1111-4111-8111-000000000001",
+      "title": "Microchip registration",
+      "category": "Microchip registration",
+      "date": "2021-07-09",
+      "notes": "Registered to the flat address. Update this if we move.",
+      "attachments": [],
+      "createdAt": "2025-01-05T10:20:00.000Z",
+      "updatedAt": "2025-01-05T10:20:00.000Z"
+    }
+  ]
+}

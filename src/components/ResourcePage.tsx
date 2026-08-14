@@ -1,0 +1,246 @@
+import { useCallback, useState, type ReactNode } from 'react';
+import { Pencil, Plus, Trash2 } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
+import { useData } from '@/store/DataContext';
+import { ApiError } from '@/lib/api';
+import { ConfirmDialog, EmptyState, ErrorNote, Modal, PageHeader, cx } from '@/components/ui';
+import type { CollectionName } from '@shared/types';
+
+export interface Column<T> {
+  header: string;
+  render: (row: T) => ReactNode;
+  /** Applied to both the header cell and the body cells. */
+  className?: string;
+}
+
+export interface FormApi<V> {
+  values: V;
+  set: (patch: Partial<V>) => void;
+  errors: Record<string, string>;
+}
+
+interface ResourcePageProps<T extends { id: string }, V extends Record<string, unknown>> {
+  collection: CollectionName;
+  title: string;
+  subtitle?: string;
+  addLabel: string;
+  rows: T[];
+  columns: Column<T>[];
+  /** Blank record for the "add" form — include petId here for pet-scoped collections. */
+  defaults: () => V;
+  /** Existing record -> form values. */
+  toValues: (row: T) => V;
+  renderForm: (form: FormApi<V>) => ReactNode;
+  describe: (row: T) => string;
+  emptyTitle: string;
+  emptyMessage?: string;
+  emptyIcon?: LucideIcon;
+  headerActions?: ReactNode;
+  /** Extra buttons in each row, shown before edit/delete. */
+  rowActions?: (row: T) => ReactNode;
+  wideModal?: boolean;
+  children?: ReactNode;
+}
+
+/**
+ * List + add/edit modal + delete confirmation for one collection. Every records
+ * page in the app is a thin configuration of this component, so they all behave
+ * and look identical.
+ */
+export function ResourcePage<T extends { id: string }, V extends Record<string, unknown>>({
+  collection,
+  title,
+  subtitle,
+  addLabel,
+  rows,
+  columns,
+  defaults,
+  toValues,
+  renderForm,
+  describe,
+  emptyTitle,
+  emptyMessage,
+  emptyIcon,
+  headerActions,
+  rowActions,
+  wideModal,
+  children,
+}: ResourcePageProps<T, V>) {
+  const { create, save, remove } = useData();
+
+  const [editing, setEditing] = useState<T | 'new' | null>(null);
+  const [values, setValues] = useState<V | null>(null);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [formError, setFormError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [pendingDelete, setPendingDelete] = useState<T | null>(null);
+
+  const openNew = () => {
+    setEditing('new');
+    setValues(defaults());
+    setErrors({});
+    setFormError(null);
+  };
+
+  const openEdit = (row: T) => {
+    setEditing(row);
+    setValues(toValues(row));
+    setErrors({});
+    setFormError(null);
+  };
+
+  const close = useCallback(() => {
+    setEditing(null);
+    setValues(null);
+  }, []);
+
+  const set = useCallback((patch: Partial<V>) => setValues((prev) => (prev ? { ...prev, ...patch } : prev)), []);
+
+  async function submit() {
+    if (!values || !editing) return;
+    setSubmitting(true);
+    setErrors({});
+    setFormError(null);
+    try {
+      if (editing === 'new') await create(collection, values);
+      else await save(collection, editing.id, values);
+      close();
+    } catch (err) {
+      if (err instanceof ApiError && err.issues.length) {
+        setErrors(err.byField);
+        setFormError('Please fix the highlighted fields.');
+      } else {
+        setFormError(err instanceof Error ? err.message : 'Could not save');
+      }
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  async function confirmDelete() {
+    if (!pendingDelete) return;
+    const row = pendingDelete;
+    setPendingDelete(null);
+    await remove(collection, row.id);
+  }
+
+  return (
+    <>
+      <PageHeader
+        title={title}
+        subtitle={subtitle}
+        actions={
+          <>
+            {headerActions}
+            <button type="button" className="btn-primary" onClick={openNew}>
+              <Plus className="size-4" />
+              {addLabel}
+            </button>
+          </>
+        }
+      />
+
+      {children}
+
+      {rows.length === 0 ? (
+        <EmptyState
+          icon={emptyIcon}
+          title={emptyTitle}
+          message={emptyMessage}
+          action={
+            <button type="button" className="btn-primary" onClick={openNew}>
+              <Plus className="size-4" />
+              {addLabel}
+            </button>
+          }
+        />
+      ) : (
+        <div className="card overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-stone-200 text-left dark:border-stone-800">
+                {columns.map((column) => (
+                  <th
+                    key={column.header}
+                    className={cx('px-4 py-2.5 text-xs font-semibold tracking-wide text-stone-500 uppercase', column.className)}
+                  >
+                    {column.header}
+                  </th>
+                ))}
+                <th className="w-px px-4 py-2.5" />
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((row) => (
+                <tr
+                  key={row.id}
+                  className="border-b border-stone-100 last:border-0 hover:bg-stone-50 dark:border-stone-800/70 dark:hover:bg-stone-800/40"
+                >
+                  {columns.map((column) => (
+                    <td key={column.header} className={cx('px-4 py-3 align-top', column.className)}>
+                      {column.render(row)}
+                    </td>
+                  ))}
+                  <td className="px-2 py-2 text-right whitespace-nowrap">
+                    {rowActions?.(row)}
+                    <button type="button" className="btn-subtle px-2 py-1" onClick={() => openEdit(row)} aria-label="Edit">
+                      <Pencil className="size-4" />
+                    </button>
+                    <button
+                      type="button"
+                      className="btn-subtle px-2 py-1 hover:text-red-600"
+                      onClick={() => setPendingDelete(row)}
+                      aria-label="Delete"
+                    >
+                      <Trash2 className="size-4" />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      <Modal
+        open={editing !== null}
+        title={editing === 'new' ? addLabel : `Edit ${title.replace(/s$/, '').toLowerCase()}`}
+        onClose={close}
+        wide={wideModal}
+        footer={
+          <>
+            <button type="button" className="btn-ghost" onClick={close}>
+              Cancel
+            </button>
+            <button type="button" className="btn-primary" onClick={() => void submit()} disabled={submitting}>
+              {submitting ? 'Saving…' : 'Save'}
+            </button>
+          </>
+        }
+      >
+        {values && (
+          <form
+            className="space-y-4"
+            onSubmit={(e) => {
+              e.preventDefault();
+              void submit();
+            }}
+          >
+            {formError && <ErrorNote>{formError}</ErrorNote>}
+            {renderForm({ values, set, errors })}
+            {/* Lets Enter submit the form without showing a duplicate button. */}
+            <button type="submit" className="hidden" aria-hidden tabIndex={-1} />
+          </form>
+        )}
+      </Modal>
+
+      <ConfirmDialog
+        open={pendingDelete !== null}
+        title="Delete this record?"
+        message={pendingDelete ? `“${describe(pendingDelete)}” will be permanently removed. This cannot be undone.` : ''}
+        onConfirm={() => void confirmDelete()}
+        onCancel={() => setPendingDelete(null)}
+      />
+    </>
+  );
+}

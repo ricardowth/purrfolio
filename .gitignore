@@ -1,0 +1,14 @@
+node_modules/
+dist/
+*.local
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.tsbuildinfo
+
+# --- Your pet's actual data. Never committed. ---
+data/data.json
+data/data.json.tmp
+data/uploads/
+data/backups/

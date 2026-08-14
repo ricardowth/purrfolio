@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(Get-PSDrive -PSProvider FileSystem | Select-Object Name, @{n='FreeGB';e={[math]::Round\\($_.Free/1GB,1\\)}}, @{n='UsedGB';e={[math]::Round\\($_.Used/1GB,1\\)}}, Root)",
+      "Read(//d//**)",
+      "PowerShell(Get-ChildItem -Recurse c:\\\\Users\\\\Ricardo\\\\purrfolio\\\\src, c:\\\\Users\\\\Ricardo\\\\purrfolio\\\\server, c:\\\\Users\\\\Ricardo\\\\purrfolio\\\\shared, c:\\\\Users\\\\Ricardo\\\\purrfolio\\\\data -File -ErrorAction SilentlyContinue | ForEach-Object { $_.FullName.Replace\\('c:\\\\Users\\\\Ricardo\\\\purrfolio\\\\',''\\) + '  \\(' + $_.Length + '\\)' })",
+      "PowerShell($nm = 'c:\\\\Users\\\\Ricardo\\\\purrfolio\\\\node_modules'; if \\(Test-Path $nm\\) { $m = Get-ChildItem $nm -Recurse -File -ErrorAction SilentlyContinue | Measure-Object -Property Length -Sum; \"node_modules: {0} files, {1} MB\" -f $m.Count, [math]::Round\\($m.Sum/1MB,1\\) }; \"D:\\\\purrfolio exists: \" + \\(Test-Path 'D:\\\\purrfolio'\\))"
+    ]
+  }
+}
