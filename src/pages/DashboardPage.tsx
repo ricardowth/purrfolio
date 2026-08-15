@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom';
 import {
   Activity,
   BookOpen,
+  Bug,
+  CalendarClock,
   CalendarDays,
   Cake,
   Pill,
@@ -15,15 +17,18 @@ import {
 import type { LucideIcon } from 'lucide-react';
 import { useData } from '@/store/DataContext';
 import { CatBody } from '@/anatomy/CatBody';
-import { describePart } from '@/anatomy/regions';
+import { REGIONS_BY_ID, describeParts } from '@/anatomy/regions';
 import { Badge, EmptyState, ISSUE_STATUS_TONE, PageHeader, SEVERITY_TONE, cx } from '@/components/ui';
 import { fileUrl } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
 import {
   activeMedications,
   currentFoods,
+  currentMonth,
+  dueDewormings,
   dueVaccinations,
   openIssues,
+  pendingFollowUps,
   upcomingAppointments,
   weightTrend,
 } from '@/lib/derive';
@@ -65,21 +70,31 @@ export default function DashboardPage() {
   const { pet, forPet } = useData();
   const i18n = useI18n();
   const { t, tEnum } = i18n;
-  const { formatAge, formatDate, formatDateTime, relativeDays } = useFormat();
+  const { formatAge, formatDate, formatDateTime, formatMonth, relativeDays } = useFormat();
   const [viewSide, setViewSide] = useState<'left' | 'right'>('left');
 
   const issues = forPet('issues');
   const appointments = forPet('appointments');
   const vaccinations = forPet('vaccinations');
   const medications = forPet('medications');
+  const dewormings = forPet('dewormings');
   const weights = forPet('weights');
   const foods = forPet('foods');
   const journal = forPet('journal');
 
   const open = openIssues(issues);
+  // There is no organ toggle on the dashboard, so an issue on the bladder or a
+  // kidney would be invisible here. Reveal the overlay only when it has
+  // something to say, keeping the summary map uncluttered otherwise.
+  const showInternal = useMemo(
+    () => issues.some((issue) => issue.parts.some((part) => REGIONS_BY_ID.get(part.bodyPart)?.internal)),
+    [issues],
+  );
   const due = dueVaccinations(vaccinations);
   const overdue = due.filter((vaccination) => (daysFromToday(vaccination.nextDueDate) ?? 0) < 0);
   const upcoming = upcomingAppointments(appointments);
+  const followUps = pendingFollowUps(appointments);
+  const dueDeworm = dueDewormings(dewormings);
   const meds = activeMedications(medications);
   const trend = weightTrend(weights);
 
@@ -117,7 +132,7 @@ export default function DashboardPage() {
       ...issues.map((row) => ({
         date: row.onsetDate,
         label: t('dash.activityIssue', { title: row.title }),
-        detail: describePart(i18n, row.bodyPart, row.side),
+        detail: describeParts(i18n, row.parts),
         to: `/issues/${row.id}`,
         icon: Activity,
       })),
@@ -271,6 +286,42 @@ export default function DashboardPage() {
             </Panel>
           )}
 
+          {followUps.length > 0 && (
+            <Panel title={t('dash.followUpsToBook')} icon={CalendarClock} to="/appointments" linkLabel={t('dash.allAppointments')}>
+              <ul className="space-y-2 text-sm">
+                {followUps.map((appointment) => {
+                  const days = daysFromToday(appointment.followUpDate) ?? 0;
+                  return (
+                    <li key={appointment.id} className="flex items-baseline justify-between gap-3">
+                      <span>
+                        <span className="font-medium text-stone-800 dark:text-stone-200">{tEnum('appointmentType', appointment.type)}</span>
+                        <span className="block text-xs text-stone-500">
+                          {t('dash.followUpFrom', { date: formatDate(appointment.dateTime) })}
+                        </span>
+                      </span>
+                      <Badge tone={days < 0 ? 'red' : days <= 30 ? 'amber' : 'neutral'}>
+                        {relativeDays(appointment.followUpDate)}
+                      </Badge>
+                    </li>
+                  );
+                })}
+              </ul>
+            </Panel>
+          )}
+
+          {dueDeworm.length > 0 && (
+            <Panel title={t('dash.dewormingDue')} icon={Bug} to="/deworming" linkLabel={t('deworm.title')}>
+              <ul className="space-y-2 text-sm">
+                {dueDeworm.map((row) => (
+                  <li key={row.id} className="flex items-center justify-between gap-3">
+                    <span className="font-medium text-stone-800 dark:text-stone-200">{row.product}</span>
+                    <Badge tone={row.nextMonth < currentMonth() ? 'red' : 'amber'}>{formatMonth(row.nextMonth)}</Badge>
+                  </li>
+                ))}
+              </ul>
+            </Panel>
+          )}
+
           {/* Care & sitters is hidden for now, so its dashboard panel is too. */}
 
           <Panel title={t('dash.recentActivity')} icon={BookOpen} to="/journal" linkLabel={t('journal.title')}>
@@ -308,7 +359,7 @@ export default function DashboardPage() {
                 {t('common.open')}
               </Link>
             </div>
-            <CatBody issues={issues} viewSide={viewSide} showInternal={false} showOffDiagram />
+            <CatBody issues={issues} viewSide={viewSide} showInternal={showInternal} showOffDiagram />
             <div className="mt-2 flex justify-center gap-1 text-xs">
               {(['left', 'right'] as const).map((side) => (
                 <button
@@ -334,7 +385,7 @@ export default function DashboardPage() {
                     <Link to={`/issues/${issue.id}`} className="flex items-start justify-between gap-2 hover:underline">
                       <span>
                         <span className="font-medium text-stone-800 dark:text-stone-200">{issue.title}</span>
-                        <span className="block text-xs text-stone-500">{describePart(i18n, issue.bodyPart, issue.side)}</span>
+                        <span className="block text-xs text-stone-500">{describeParts(i18n, issue.parts)}</span>
                       </span>
                       <Badge tone={issue.status === 'monitoring' ? ISSUE_STATUS_TONE.monitoring : SEVERITY_TONE[issue.severity]}>
                         {issue.status === 'monitoring' ? tEnum('issueStatus', 'monitoring') : tEnum('severity', issue.severity)}

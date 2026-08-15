@@ -7,6 +7,36 @@
   --font-sans: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 }
 
+/* Chart series colours, assigned per category in a fixed order and never cycled.
+   The dark column is the same hues re-stepped for the dark surface, not a flip;
+   both sets are validated for colour-blind separation against the card they sit
+   on (white / stone-900). Charts reference them by role so a theme change swaps
+   values in one place. */
+:root {
+  --series-appointments: #2a78d6;
+  --series-vaccinations: #eb6834;
+  --series-medications: #1baf7a;
+  --series-deworming: #8b6cd8;
+  --series-foods: #eda100;
+  --series-supplies: #0e8f9c;
+  --series-care: #e87ba4;
+  --chart-surface: #ffffff;
+  --chart-grid: #e7e5e4;
+  --chart-ink: #57534e;
+}
+html.dark {
+  --series-appointments: #3987e5;
+  --series-vaccinations: #d95926;
+  --series-medications: #199e70;
+  --series-deworming: #9a7ce6;
+  --series-foods: #c98500;
+  --series-supplies: #22a7b4;
+  --series-care: #d55181;
+  --chart-surface: #1c1917;
+  --chart-grid: #292524;
+  --chart-ink: #a8a29e;
+}
+
 @layer base {
   html {
     color-scheme: light;

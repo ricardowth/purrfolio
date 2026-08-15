@@ -148,3 +148,7 @@ export function describePart(i18n: I18n, bodyPart: string, side: string): string
 
   return `${side === 'left' ? 'Left' : 'Right'} ${label.charAt(0).toLowerCase()}${label.slice(1)}`;
 }
+
+/** Every zone one issue touches, on one line: 'Orelha esquerda, Orelha direita'. */
+export const describeParts = (i18n: I18n, parts: { bodyPart: string; side: string }[]) =>
+  parts.map((part) => describePart(i18n, part.bodyPart, part.side)).join(', ');

@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, Printer } from 'lucide-react';
 import { useData } from '@/store/DataContext';
-import { describePart } from '@/anatomy/regions';
-import { activeCareEvents, activeMedications, currentFoods, latestWeight, openIssues } from '@/lib/derive';
+import { describeParts } from '@/anatomy/regions';
+import { activeCareEvents, activeMedications, currentFoods, describeSchedule, latestWeight, openIssues } from '@/lib/derive';
 import { useI18n } from '@/lib/i18n';
 import { titleCase, useFormat } from '@/lib/format';
 import { fileUrl } from '@/lib/api';
@@ -149,7 +149,7 @@ export default function CareSheetPage() {
                   <li key={medication.id}>
                     <p className="font-medium text-stone-900 dark:text-stone-100">{medication.name}</p>
                     <p className="text-stone-600 dark:text-stone-400">
-                      {[medication.dose, medication.frequency, tEnum('medRoute', medication.route)].filter(Boolean).join(' · ')}
+                      {[medication.dose, describeSchedule(i18n, medication), tEnum('medRoute', medication.route)].filter(Boolean).join(' · ')}
                     </p>
                     {medication.reason && <p className="text-stone-500">{t('sheet.medicationFor', { reason: medication.reason })}</p>}
                   </li>
@@ -172,7 +172,7 @@ export default function CareSheetPage() {
               {issues.map((issue) => (
                 <li key={issue.id}>
                   <p className="font-medium text-stone-900 dark:text-stone-100">
-                    {issue.title} <span className="font-normal text-stone-500">· {describePart(i18n, issue.bodyPart, issue.side)}</span>
+                    {issue.title} <span className="font-normal text-stone-500">· {describeParts(i18n, issue.parts)}</span>
                   </p>
                   {issue.description && <p className="text-stone-600 dark:text-stone-400">{issue.description}</p>}
                 </li>

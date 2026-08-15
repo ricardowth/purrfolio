@@ -224,3 +224,4 @@ export function Badge({ tone = 'neutral', children }: { tone?: Tone; children: R
 export const SEVERITY_TONE: Record<string, Tone> = { low: 'amber', medium: 'orange', high: 'red' };
 export const ISSUE_STATUS_TONE: Record<string, Tone> = { active: 'red', monitoring: 'amber', resolved: 'green' };
 export const APPOINTMENT_STATUS_TONE: Record<string, Tone> = { scheduled: 'blue', completed: 'green', cancelled: 'neutral' };
+export const MEDICATION_STATUS_TONE: Record<string, Tone> = { upcoming: 'blue', active: 'green', finished: 'neutral' };

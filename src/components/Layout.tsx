@@ -12,10 +12,13 @@ import {
   Pill,
   Scale,
   Settings,
+  ShoppingBasket,
   Soup,
   Sun,
   Syringe,
   Users,
+  Wallet,
+  Bug,
   X,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
@@ -38,6 +41,7 @@ const NAV: { heading: StringKey; items: NavItem[] }[] = [
     items: [
       { to: '/', label: 'nav.dashboard', icon: LayoutDashboard },
       { to: '/health', label: 'nav.healthMap', icon: Activity },
+      { to: '/costs', label: 'nav.costs', icon: Wallet },
     ],
   },
   {
@@ -46,7 +50,9 @@ const NAV: { heading: StringKey; items: NavItem[] }[] = [
       { to: '/appointments', label: 'nav.appointments', icon: CalendarDays },
       { to: '/vaccinations', label: 'nav.vaccinations', icon: Syringe },
       { to: '/medications', label: 'nav.medications', icon: Pill },
+      { to: '/deworming', label: 'nav.deworming', icon: Bug },
       { to: '/food', label: 'nav.food', icon: Soup },
+      { to: '/supplies', label: 'nav.supplies', icon: ShoppingBasket },
       { to: '/weight', label: 'nav.weight', icon: Scale },
       { to: '/journal', label: 'nav.journal', icon: BookOpen },
       { to: '/documents', label: 'nav.documents', icon: FolderOpen },

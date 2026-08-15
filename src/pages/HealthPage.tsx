@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { Activity, Plus, X } from 'lucide-react';
 import { useData } from '@/store/DataContext';
 import { CatBody, SeverityLegend, type PartSelection } from '@/anatomy/CatBody';
-import { describePart } from '@/anatomy/regions';
+import { describePart, describeParts } from '@/anatomy/regions';
 import { IssueEditor } from '@/components/IssueEditor';
 import { Badge, EmptyState, ISSUE_STATUS_TONE, PageHeader, SEVERITY_TONE, cx } from '@/components/ui';
 import { useI18n } from '@/lib/i18n';
@@ -27,7 +27,7 @@ function IssueCard({ issue }: { issue: Issue }) {
         <div className="min-w-0">
           <p className="truncate font-medium text-stone-900 dark:text-stone-100">{issue.title}</p>
           <p className="mt-0.5 text-xs text-stone-500">
-            {describePart(i18n, issue.bodyPart, issue.side)} · {t('health.firstNoticed', { date: formatDate(issue.onsetDate) })}
+            {describeParts(i18n, issue.parts)} · {t('health.firstNoticed', { date: formatDate(issue.onsetDate) })}
           </p>
         </div>
         <div className="flex shrink-0 flex-col items-end gap-1">
@@ -70,7 +70,11 @@ export default function HealthPage() {
     let rows = issues;
     if (statusFilter === 'open') rows = rows.filter((issue) => issue.status !== 'resolved');
     if (statusFilter === 'resolved') rows = rows.filter((issue) => issue.status === 'resolved');
-    if (selected) rows = rows.filter((issue) => issue.bodyPart === selected.bodyPart && issue.side === selected.side);
+    if (selected) {
+      rows = rows.filter((issue) =>
+        issue.parts.some((part) => part.bodyPart === selected.bodyPart && part.side === selected.side),
+      );
+    }
     return [...rows].sort((a, b) => (b.onsetDate || '').localeCompare(a.onsetDate || ''));
   }, [issues, statusFilter, selected]);
 
@@ -126,7 +130,7 @@ export default function HealthPage() {
             issues={issues}
             viewSide={viewSide}
             showInternal={showInternal}
-            selected={selected}
+            selected={selected ? [selected] : null}
             showOffDiagram
             onSelect={(part) =>
               setSelected((prev) => (prev?.bodyPart === part.bodyPart && prev.side === part.side ? null : part))

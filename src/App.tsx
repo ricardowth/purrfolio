@@ -4,12 +4,15 @@ import { useData } from '@/store/DataContext';
 import { Layout, RequirePet } from '@/components/Layout';
 import { ErrorNote, Spinner } from '@/components/ui';
 import DashboardPage from '@/pages/DashboardPage';
+import CostsPage from '@/pages/CostsPage';
+import DewormingPage from '@/pages/DewormingPage';
 import HealthPage from '@/pages/HealthPage';
 import IssueDetailPage from '@/pages/IssueDetailPage';
 import AppointmentsPage from '@/pages/AppointmentsPage';
 import VaccinationsPage from '@/pages/VaccinationsPage';
 import MedicationsPage from '@/pages/MedicationsPage';
 import FoodPage from '@/pages/FoodPage';
+import SuppliesPage from '@/pages/SuppliesPage';
 import WeightPage from '@/pages/WeightPage';
 import JournalPage from '@/pages/JournalPage';
 import DocumentsPage from '@/pages/DocumentsPage';
@@ -23,11 +26,14 @@ import SettingsPage from '@/pages/SettingsPage';
 const petPages: [string, React.ComponentType][] = [
   ['/', DashboardPage],
   ['/health', HealthPage],
+  ['/costs', CostsPage],
   ['/issues/:issueId', IssueDetailPage],
   ['/appointments', AppointmentsPage],
   ['/vaccinations', VaccinationsPage],
   ['/medications', MedicationsPage],
+  ['/deworming', DewormingPage],
   ['/food', FoodPage],
+  ['/supplies', SuppliesPage],
   ['/weight', WeightPage],
   ['/journal', JournalPage],
   ['/documents', DocumentsPage],

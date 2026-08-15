@@ -45,6 +45,7 @@ export default function AppointmentsPage() {
     weightKg: null,
     weightId: '',
     followUpDate: '',
+    followUpAppointmentId: '',
     issueIds: [],
     medicationIds: [],
     foodIds: [],
@@ -89,14 +90,14 @@ export default function AppointmentsPage() {
         {
           header: t('appt.reason'),
           render: (row) =>
-            row.issueIds.length > 0 ? (
+            row.issueIds?.length ? (
               <IssueChips ids={row.issueIds} />
             ) : (
               // Free-text reasons from before the issue link existed.
               <span className="line-clamp-2 max-w-56 text-stone-500">{row.reason || '—'}</span>
             ),
         },
-        { header: t('common.vet'), render: (row) => <ContactName id={row.contactId} /> },
+        { header: t('common.clinic'), render: (row) => <ContactName id={row.clinicId} fallback={row.clinic} /> },
         {
           header: t('appt.prescribed'),
           render: (row) => (
@@ -108,7 +109,7 @@ export default function AppointmentsPage() {
         },
         { header: t('common.cost'), render: (row) => formatMoney(row.cost) },
       ]}
-      renderForm={({ values, set, errors }) => (
+      renderForm={({ values, set, errors, editingId }) => (
         <>
           <div className="grid gap-4 sm:grid-cols-3">
             <Field label={t('appt.dateTime')} error={errors.dateTime}>
@@ -136,9 +137,28 @@ export default function AppointmentsPage() {
             <Field label={t('common.clinic')} hint={values.clinic && !values.clinicId ? t('appt.legacyClinic', { name: values.clinic }) : undefined}>
               <ContactSelect value={values.clinicId} onChange={(clinicId) => set({ clinicId })} roles={['clinic']} />
             </Field>
-            <Field label={t('appt.followUp')}>
+            <Field label={t('appt.followUp')} hint={t('appt.followUpHint')}>
               <input type="date" className="input" value={values.followUpDate} onChange={(e) => set({ followUpDate: e.target.value })} />
             </Field>
+            {values.followUpDate && (
+              <Field label={t('appt.followUpBooked')} hint={t('appt.followUpBookedHint')}>
+                <select
+                  className="input"
+                  value={values.followUpAppointmentId}
+                  onChange={(e) => set({ followUpAppointmentId: e.target.value })}
+                >
+                  <option value="">{t('appt.followUpNotBooked')}</option>
+                  {/* Only visits after this one can be the follow-up, and never itself. */}
+                  {rows
+                    .filter((row) => row.id !== editingId && row.dateTime > values.dateTime)
+                    .map((row) => (
+                      <option key={row.id} value={row.id}>
+                        {formatDateTime(row.dateTime)} · {tEnum('appointmentType', row.type)}
+                      </option>
+                    ))}
+                </select>
+              </Field>
+            )}
             <Field label={t('common.costEur')}>
               <input
                 type="number"

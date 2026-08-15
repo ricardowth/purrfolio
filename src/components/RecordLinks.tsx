@@ -5,6 +5,7 @@ import { useData } from '@/store/DataContext';
 import { useI18n } from '@/lib/i18n';
 import { Badge, Field, Select, cx } from '@/components/ui';
 import { today } from '@/lib/format';
+import { numberOrNull, numberValue } from '@/lib/forms';
 import { MED_ROUTES, FOOD_TYPES } from '@shared/schema.js';
 
 /**
@@ -102,6 +103,7 @@ export function MedicationPicker({
   const [name, setName] = useState('');
   const [dose, setDose] = useState('');
   const [frequency, setFrequency] = useState('');
+  const [timesPerDay, setTimesPerDay] = useState<number | null>(null);
   const [route, setRoute] = useState('oral');
   const [busy, setBusy] = useState(false);
 
@@ -116,6 +118,7 @@ export function MedicationPicker({
         name: name.trim(),
         dose,
         frequency,
+        timesPerDay,
         route,
         startDate: startDate || today(),
         issueIds,
@@ -124,6 +127,7 @@ export function MedicationPicker({
       setName('');
       setDose('');
       setFrequency('');
+      setTimesPerDay(null);
       setRoute('oral');
       close();
     } finally {
@@ -147,7 +151,16 @@ export function MedicationPicker({
             <Field label={t('med.dose')}>
               <input className="input" value={dose} onChange={(e) => setDose(e.target.value)} placeholder={t('med.dosePlaceholder')} />
             </Field>
-            <Field label={t('med.frequency')}>
+            <Field label={t('med.timesPerDay')}>
+              <input
+                type="number"
+                min="1"
+                className="input"
+                value={numberValue(timesPerDay)}
+                onChange={(e) => setTimesPerDay(numberOrNull(e.target.value))}
+              />
+            </Field>
+            <Field label={t('med.frequency')} className="sm:col-span-2">
               <input
                 className="input"
                 value={frequency}
@@ -251,9 +264,12 @@ export function FoodPicker({ value, onChange, startDate }: { value: string[]; on
 
 // --- read-only chips -------------------------------------------------------
 
-export function MedicationChips({ ids }: { ids: string[] }) {
+// `ids` is guaranteed by the schema, but a record written before the field
+// existed can still reach here as undefined if the API process is older than
+// the frontend. Treat that as "nothing linked" rather than taking the page down.
+export function MedicationChips({ ids }: { ids?: string[] }) {
   const { forPet } = useData();
-  const rows = forPet('medications').filter((row) => ids.includes(row.id));
+  const rows = forPet('medications').filter((row) => ids?.includes(row.id));
   if (rows.length === 0) return <span className="text-stone-400">—</span>;
   return (
     <span className="flex flex-wrap gap-1">
@@ -266,9 +282,9 @@ export function MedicationChips({ ids }: { ids: string[] }) {
   );
 }
 
-export function FoodChips({ ids }: { ids: string[] }) {
+export function FoodChips({ ids }: { ids?: string[] }) {
   const { forPet } = useData();
-  const rows = forPet('foods').filter((row) => ids.includes(row.id));
+  const rows = forPet('foods').filter((row) => ids?.includes(row.id));
   if (rows.length === 0) return null;
   return (
     <span className={cx('flex flex-wrap gap-1')}>

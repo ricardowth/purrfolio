@@ -6,19 +6,29 @@ import { ContactName, ContactSelect } from '@/components/ContactSelect';
 import { Badge, Field } from '@/components/ui';
 import { useI18n } from '@/lib/i18n';
 import { byDateDesc, daysFromToday, today, useFormat } from '@/lib/format';
+import { isBoosterSuperseded } from '@/lib/derive';
 import { numberOrNull, numberValue, stripMeta, type FormValues } from '@/lib/forms';
 import type { Vaccination } from '@shared/types';
 
 type Values = FormValues<Vaccination>;
 
 /** Due status shown in the list. */
-export function DueBadge({ nextDueDate }: { nextDueDate: string }) {
+export function DueBadge({ nextDueDate, superseded }: { nextDueDate: string; superseded?: boolean }) {
   const { t } = useI18n();
   const { formatDate, relativeDays } = useFormat();
 
   if (!nextDueDate) return <span className="text-stone-400">—</span>;
   const days = daysFromToday(nextDueDate);
   if (days === null) return <span className="text-stone-400">—</span>;
+  // A dose that has already been followed by a newer one is history: show the
+  // date it asked for, but never chase it.
+  if (superseded) {
+    return (
+      <span className="text-stone-400 line-through dark:text-stone-500" title={t('vax.supersededHint')}>
+        {formatDate(nextDueDate)}
+      </span>
+    );
+  }
   if (days < 0) return <Badge tone="red">{t('vax.overdue', { when: relativeDays(nextDueDate) })}</Badge>;
   if (days <= 30) return <Badge tone="amber">{t('vax.due', { when: relativeDays(nextDueDate) })}</Badge>;
   return <span className="text-stone-600 dark:text-stone-400">{formatDate(nextDueDate)}</span>;
@@ -60,8 +70,8 @@ export default function VaccinationsPage() {
       columns={[
         { header: t('vax.vaccine'), render: (row) => <span className="font-medium text-stone-900 dark:text-stone-100">{row.name}</span> },
         { header: t('vax.given'), render: (row) => formatDate(row.date) },
-        { header: t('vax.nextDue'), render: (row) => <DueBadge nextDueDate={row.nextDueDate} /> },
-        { header: t('common.vet'), render: (row) => <ContactName id={row.contactId} /> },
+        { header: t('vax.nextDue'), render: (row) => <DueBadge nextDueDate={row.nextDueDate} superseded={isBoosterSuperseded(row, rows)} /> },
+        { header: t('common.clinic'), render: (row) => <ContactName id={row.clinicId} fallback={row.clinic} /> },
         { header: t('vax.batch'), render: (row) => row.batchNumber || '—' },
         { header: t('common.cost'), render: (row) => formatMoney(row.cost) },
       ]}

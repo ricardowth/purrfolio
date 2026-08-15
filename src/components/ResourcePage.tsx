@@ -18,15 +18,26 @@ export interface FormApi<V> {
   values: V;
   set: (patch: Partial<V>) => void;
   errors: Record<string, string>;
+  /** Id of the record being edited, or null when adding — for forms that need
+   *  to exclude the record from a list of its own siblings. */
+  editingId: string | null;
 }
 
-interface ResourcePageProps<T extends { id: string }, V extends Record<string, unknown>> {
+/** One table on the page. Pages with a single list never build these by hand. */
+export interface Section<T> {
+  /** Heading above the table; left out when the page is one plain list. */
+  title?: string;
+  rows: T[];
+  columns: Column<T>[];
+  /** Shown instead of the table when this section is empty but a sibling isn't. */
+  emptyMessage?: string;
+}
+
+interface BaseProps<T extends { id: string }, V extends Record<string, unknown>> {
   collection: CollectionName;
   title: string;
   subtitle?: string;
   addLabel: string;
-  rows: T[];
-  columns: Column<T>[];
   /** Blank record for the "add" form — include petId here for pet-scoped collections. */
   defaults: () => V;
   /** Existing record -> form values. */
@@ -43,30 +54,37 @@ interface ResourcePageProps<T extends { id: string }, V extends Record<string, u
   children?: ReactNode;
 }
 
+/** One list, or several under their own headings — never both. */
+type ResourcePageProps<T extends { id: string }, V extends Record<string, unknown>> = BaseProps<T, V> &
+  ({ rows: T[]; columns: Column<T>[]; sections?: never } | { rows?: never; columns?: never; sections: Section<T>[] });
+
 /**
  * List + add/edit modal + delete confirmation for one collection. Every records
  * page in the app is a thin configuration of this component, so they all behave
  * and look identical.
  */
-export function ResourcePage<T extends { id: string }, V extends Record<string, unknown>>({
-  collection,
-  title,
-  subtitle,
-  addLabel,
-  rows,
-  columns,
-  defaults,
-  toValues,
-  renderForm,
-  describe,
-  emptyTitle,
-  emptyMessage,
-  emptyIcon,
-  headerActions,
-  rowActions,
-  wideModal,
-  children,
-}: ResourcePageProps<T, V>) {
+export function ResourcePage<T extends { id: string }, V extends Record<string, unknown>>(props: ResourcePageProps<T, V>) {
+  const {
+    collection,
+    title,
+    subtitle,
+    addLabel,
+    defaults,
+    toValues,
+    renderForm,
+    describe,
+    emptyTitle,
+    emptyMessage,
+    emptyIcon,
+    headerActions,
+    rowActions,
+    wideModal,
+    children,
+  } = props;
+
+  const sections: Section<T>[] = props.sections ?? [{ rows: props.rows ?? [], columns: props.columns ?? [] }];
+  const totalRows = sections.reduce((count, section) => count + section.rows.length, 0);
+
   const { create, save, remove } = useData();
   const i18n = useI18n();
   const { t } = i18n;
@@ -87,7 +105,10 @@ export function ResourcePage<T extends { id: string }, V extends Record<string, 
 
   const openEdit = (row: T) => {
     setEditing(row);
-    setValues(toValues(row));
+    // Layered over the blanks so a record written before a field existed still
+    // opens: the stored values win, and anything missing falls back to the empty
+    // value the form expects rather than reaching the inputs as undefined.
+    setValues({ ...defaults(), ...toValues(row) });
     setErrors({});
     setFormError(null);
   };
@@ -145,7 +166,7 @@ export function ResourcePage<T extends { id: string }, V extends Record<string, 
 
       {children}
 
-      {rows.length === 0 ? (
+      {totalRows === 0 ? (
         <EmptyState
           icon={emptyIcon}
           title={emptyTitle}
@@ -158,50 +179,66 @@ export function ResourcePage<T extends { id: string }, V extends Record<string, 
           }
         />
       ) : (
-        <div className="card overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-stone-200 text-left dark:border-stone-800">
-                {columns.map((column) => (
-                  <th
-                    key={column.header}
-                    className={cx('px-4 py-2.5 text-xs font-semibold tracking-wide text-stone-500 uppercase', column.className)}
-                  >
-                    {column.header}
-                  </th>
-                ))}
-                <th className="w-px px-4 py-2.5" />
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((row) => (
-                <tr
-                  key={row.id}
-                  className="border-b border-stone-100 last:border-0 hover:bg-stone-50 dark:border-stone-800/70 dark:hover:bg-stone-800/40"
-                >
-                  {columns.map((column) => (
-                    <td key={column.header} className={cx('px-4 py-3 align-top', column.className)}>
-                      {column.render(row)}
-                    </td>
-                  ))}
-                  <td className="px-2 py-2 text-right whitespace-nowrap">
-                    {rowActions?.(row)}
-                    <button type="button" className="btn-subtle px-2 py-1" onClick={() => openEdit(row)} aria-label={t('common.edit')}>
-                      <Pencil className="size-4" />
-                    </button>
-                    <button
-                      type="button"
-                      className="btn-subtle px-2 py-1 hover:text-red-600"
-                      onClick={() => setPendingDelete(row)}
-                      aria-label={t('common.delete')}
-                    >
-                      <Trash2 className="size-4" />
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="space-y-6">
+          {sections.map((section, index) => (
+            <section key={section.title ?? index}>
+              {section.title && <p className="section-title mb-2">{section.title}</p>}
+              {section.rows.length === 0 ? (
+                <p className="card px-4 py-6 text-center text-sm text-stone-500">{section.emptyMessage}</p>
+              ) : (
+                <div className="card overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-stone-200 text-left dark:border-stone-800">
+                        {section.columns.map((column) => (
+                          <th
+                            key={column.header}
+                            className={cx('px-4 py-2.5 text-xs font-semibold tracking-wide text-stone-500 uppercase', column.className)}
+                          >
+                            {column.header}
+                          </th>
+                        ))}
+                        <th className="w-px px-4 py-2.5" />
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {section.rows.map((row) => (
+                        <tr
+                          key={row.id}
+                          className="border-b border-stone-100 last:border-0 hover:bg-stone-50 dark:border-stone-800/70 dark:hover:bg-stone-800/40"
+                        >
+                          {section.columns.map((column) => (
+                            <td key={column.header} className={cx('px-4 py-3 align-top', column.className)}>
+                              {column.render(row)}
+                            </td>
+                          ))}
+                          <td className="px-2 py-2 text-right whitespace-nowrap">
+                            {rowActions?.(row)}
+                            <button
+                              type="button"
+                              className="btn-subtle px-2 py-1"
+                              onClick={() => openEdit(row)}
+                              aria-label={t('common.edit')}
+                            >
+                              <Pencil className="size-4" />
+                            </button>
+                            <button
+                              type="button"
+                              className="btn-subtle px-2 py-1 hover:text-red-600"
+                              onClick={() => setPendingDelete(row)}
+                              aria-label={t('common.delete')}
+                            >
+                              <Trash2 className="size-4" />
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </section>
+          ))}
         </div>
       )}
 
@@ -230,7 +267,7 @@ export function ResourcePage<T extends { id: string }, V extends Record<string, 
             }}
           >
             {formError && <ErrorNote>{formError}</ErrorNote>}
-            {renderForm({ values, set, errors })}
+            {renderForm({ values, set, errors, editingId: editing && editing !== 'new' ? editing.id : null })}
             {/* Lets Enter submit the form without showing a duplicate button. */}
             <button type="submit" className="hidden" aria-hidden tabIndex={-1} />
           </form>

@@ -38,21 +38,27 @@ const EMPTY_STATE: PartState = { worstActive: null, activeCount: 0, resolvedCoun
 const keyOf = (bodyPart: string, side: Side) => `${bodyPart}|${side}`;
 const opposite = (side: 'left' | 'right') => (side === 'left' ? 'right' : 'left');
 
-/** Roll the pet's issues up into per-part severity, keyed by part + side. */
+/**
+ * Roll the pet's issues up into per-part severity, keyed by part + side. An
+ * issue spanning several zones counts once against each of them, so both ears
+ * light up for the one ear infection.
+ */
 function summarise(issues: Issue[]): Map<string, PartState> {
   const map = new Map<string, PartState>();
   for (const issue of issues) {
-    const key = keyOf(issue.bodyPart, issue.side);
-    const current = map.get(key) ?? { ...EMPTY_STATE };
-    if (issue.status === 'resolved') {
-      current.resolvedCount += 1;
-    } else {
-      current.activeCount += 1;
-      if (!current.worstActive || SEVERITY_RANK[issue.severity] > SEVERITY_RANK[current.worstActive]) {
-        current.worstActive = issue.severity;
+    for (const part of issue.parts) {
+      const key = keyOf(part.bodyPart, part.side);
+      const current = map.get(key) ?? { ...EMPTY_STATE };
+      if (issue.status === 'resolved') {
+        current.resolvedCount += 1;
+      } else {
+        current.activeCount += 1;
+        if (!current.worstActive || SEVERITY_RANK[issue.severity] > SEVERITY_RANK[current.worstActive]) {
+          current.worstActive = issue.severity;
+        }
       }
+      map.set(key, current);
     }
-    map.set(key, current);
   }
   return map;
 }
@@ -75,7 +81,8 @@ interface CatBodyProps {
   issues: Issue[];
   viewSide: 'left' | 'right';
   showInternal: boolean;
-  selected?: PartSelection | null;
+  /** Zones drawn as picked — one while filtering, several while editing an issue. */
+  selected?: PartSelection[] | null;
   onSelect?: (selection: PartSelection) => void;
   className?: string;
   /**
@@ -104,7 +111,7 @@ export function CatBody({ issues, viewSide, showInternal, selected, onSelect, cl
   function renderOverlay(region: Region, shape: Shape, index: number) {
     const side = sideFor(region, shape);
     const state = states.get(keyOf(region.id, side)) ?? EMPTY_STATE;
-    const isSelected = selected?.bodyPart === region.id && selected.side === side;
+    const isSelected = Boolean(selected?.some((part) => part.bodyPart === region.id && part.side === side));
     const isHovered = hovered?.bodyPart === region.id && hovered.side === side;
 
     const fill = state.worstActive
@@ -150,11 +157,19 @@ export function CatBody({ issues, viewSide, showInternal, selected, onSelect, cl
     );
   }
 
-  const caption = hovered ?? selected ?? null;
+  // With several zones picked there is no single one to caption, so the line
+  // falls back to the hover hint rather than naming an arbitrary member.
+  const caption = hovered ?? (selected?.length === 1 ? selected[0] : null);
   const captionState = caption ? (states.get(keyOf(caption.bodyPart, caption.side)) ?? EMPTY_STATE) : null;
 
   const offDiagram = showOffDiagram
-    ? issues.filter((issue) => issue.status !== 'resolved' && (REGIONS_BY_ID.get(issue.bodyPart)?.shapes.length ?? 0) === 0)
+    ? issues.flatMap((issue) =>
+        issue.status === 'resolved'
+          ? []
+          : issue.parts
+              .filter((part) => (REGIONS_BY_ID.get(part.bodyPart)?.shapes.length ?? 0) === 0)
+              .map((part) => ({ issue, part })),
+      )
     : [];
 
   return (
@@ -220,11 +235,11 @@ export function CatBody({ issues, viewSide, showInternal, selected, onSelect, cl
         <div className="mt-2 rounded-lg border border-dashed border-stone-300 px-3 py-2 dark:border-stone-700">
           <p className="mb-1.5 text-[11px] font-semibold tracking-wide text-stone-400 uppercase">{t('body.offDiagram')}</p>
           <ul className="space-y-1 text-sm">
-            {offDiagram.map((issue) => (
-              <li key={issue.id} className="flex items-center gap-2">
+            {offDiagram.map(({ issue, part }) => (
+              <li key={`${issue.id}-${part.bodyPart}`} className="flex items-center gap-2">
                 <span className="size-2 shrink-0 rounded-full" style={{ background: SEVERITY_FILL[issue.severity] }} />
                 <span className="truncate text-stone-700 dark:text-stone-300">{issue.title}</span>
-                <span className="ml-auto shrink-0 text-xs text-stone-500">{regionLabel(i18n, issue.bodyPart)}</span>
+                <span className="ml-auto shrink-0 text-xs text-stone-500">{regionLabel(i18n, part.bodyPart)}</span>
               </li>
             ))}
           </ul>

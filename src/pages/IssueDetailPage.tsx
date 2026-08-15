@@ -3,12 +3,13 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, CalendarDays, Pencil, Pill, Plus, Trash2 } from 'lucide-react';
 import { useData } from '@/store/DataContext';
 import { CatBody } from '@/anatomy/CatBody';
-import { describePart, REGIONS_BY_ID } from '@/anatomy/regions';
+import { describeParts, REGIONS_BY_ID } from '@/anatomy/regions';
 import { IssueEditor } from '@/components/IssueEditor';
 import { AttachmentField, AttachmentGallery } from '@/components/AttachmentField';
 import { Badge, ConfirmDialog, EmptyState, Field, ISSUE_STATUS_TONE, SEVERITY_TONE } from '@/components/ui';
 import { useI18n } from '@/lib/i18n';
 import { today, useFormat } from '@/lib/format';
+import { describeSchedule } from '@/lib/derive';
 import { stripMeta } from '@/lib/forms';
 import type { Attachment, Issue } from '@shared/types';
 
@@ -111,7 +112,9 @@ export default function IssueDetailPage() {
     .sort((a, b) => b.dateTime.localeCompare(a.dateTime));
   const medications = forPet('medications').filter((medication) => medication.issueIds.includes(issue.id));
   const updates = [...issue.updates].sort((a, b) => b.date.localeCompare(a.date));
-  const region = REGIONS_BY_ID.get(issue.bodyPart);
+  // The map opens on the side and overlay that show what the issue is about.
+  const sidedPart = issue.parts.find((part) => part.side === 'left' || part.side === 'right');
+  const hasInternal = issue.parts.some((part) => REGIONS_BY_ID.get(part.bodyPart)?.internal);
 
   async function removeUpdate(updateId: string) {
     setPendingUpdateDelete(null);
@@ -134,7 +137,7 @@ export default function IssueDetailPage() {
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-stone-900 dark:text-stone-50">{issue.title}</h1>
           <p className="mt-1 text-sm text-stone-500">
-            {describePart(i18n, issue.bodyPart, issue.side)} ·{' '}
+            {describeParts(i18n, issue.parts)} ·{' '}
             {t('issueDetail.firstNoticed', { date: formatDate(issue.onsetDate), rel: relativeDays(issue.onsetDate) })}
             {issue.status === 'resolved' &&
               issue.resolvedDate &&
@@ -222,9 +225,9 @@ export default function IssueDetailPage() {
             <p className="section-title mb-2">{t('issueDetail.location')}</p>
             <CatBody
               issues={[issue]}
-              viewSide={issue.side === 'right' ? 'right' : 'left'}
-              showInternal={Boolean(region?.internal)}
-              selected={{ bodyPart: issue.bodyPart, side: issue.side }}
+              viewSide={sidedPart?.side === 'right' ? 'right' : 'left'}
+              showInternal={hasInternal}
+              selected={issue.parts}
             />
           </div>
 
@@ -268,7 +271,7 @@ export default function IssueDetailPage() {
                   <li key={medication.id}>
                     <p className="font-medium text-stone-800 dark:text-stone-200">{medication.name}</p>
                     <p className="text-stone-500">
-                      {[medication.dose, medication.frequency].filter(Boolean).join(' · ') || t('issueDetail.noDose')}
+                      {[medication.dose, describeSchedule(i18n, medication)].filter(Boolean).join(' · ') || t('issueDetail.noDose')}
                     </p>
                   </li>
                 ))}

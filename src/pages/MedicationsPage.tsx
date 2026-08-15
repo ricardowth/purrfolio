@@ -3,10 +3,10 @@ import { useData } from '@/store/DataContext';
 import { ResourcePage } from '@/components/ResourcePage';
 import { AttachmentField } from '@/components/AttachmentField';
 import { IssueChips, IssuePicker } from '@/components/IssueLinks';
-import { Badge, Checkbox, Field, Select } from '@/components/ui';
+import { Badge, Checkbox, Field, MEDICATION_STATUS_TONE, Select } from '@/components/ui';
 import { useI18n } from '@/lib/i18n';
 import { today, useFormat } from '@/lib/format';
-import { isMedicationActive } from '@/lib/derive';
+import { describeSchedule, isMedicationActive, medicationStatus } from '@/lib/derive';
 import { numberOrNull, numberValue, stripMeta, type FormValues } from '@/lib/forms';
 import { MED_ROUTES } from '@shared/schema.js';
 import type { Medication } from '@shared/types';
@@ -15,7 +15,8 @@ type Values = FormValues<Medication>;
 
 export default function MedicationsPage() {
   const { petId, forPet, save } = useData();
-  const { t, tEnum } = useI18n();
+  const i18n = useI18n();
+  const { t, tEnum } = i18n;
   const { formatDate, formatDateTime, formatMoney } = useFormat();
 
   const rows = [...forPet('medications')].sort((a, b) => {
@@ -91,14 +92,16 @@ export default function MedicationsPage() {
           render: (row) => (
             <div>
               <p>{row.dose || '—'}</p>
-              <p className="text-xs text-stone-500">{[tEnum('medRoute', row.route), row.frequency].filter(Boolean).join(' · ') || '—'}</p>
+              <p className="text-xs text-stone-500">{[tEnum('medRoute', row.route), describeSchedule(i18n, row)].filter(Boolean).join(' · ') || '—'}</p>
             </div>
           ),
         },
         {
           header: t('common.status'),
-          render: (row) =>
-            isMedicationActive(row) ? <Badge tone="green">{t('med.active')}</Badge> : <Badge tone="neutral">{t('med.finished')}</Badge>,
+          render: (row) => {
+            const status = medicationStatus(row);
+            return <Badge tone={MEDICATION_STATUS_TONE[status]}>{t(`med.${status}` as const)}</Badge>;
+          },
         },
         {
           header: t('common.period'),
@@ -147,21 +150,21 @@ export default function MedicationsPage() {
                 placeholder={t('med.dosePlaceholder')}
               />
             </Field>
-            <Field label={t('med.frequency')}>
-              <input
-                className="input"
-                value={values.frequency}
-                onChange={(e) => set({ frequency: e.target.value })}
-                placeholder={t('med.frequencyPlaceholder')}
-              />
-            </Field>
-            <Field label={t('med.timesPerDay')}>
+            <Field label={t('med.timesPerDay')} hint={t('med.timesPerDayHint')}>
               <input
                 type="number"
                 min="1"
                 className="input"
                 value={numberValue(values.timesPerDay)}
                 onChange={(e) => set({ timesPerDay: numberOrNull(e.target.value) })}
+              />
+            </Field>
+            <Field label={t('med.frequency')} hint={t('med.frequencyHint')}>
+              <input
+                className="input"
+                value={values.frequency}
+                onChange={(e) => set({ frequency: e.target.value })}
+                placeholder={t('med.frequencyPlaceholder')}
               />
             </Field>
             <Field label={t('common.startDate')}>

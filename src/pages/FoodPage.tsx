@@ -1,10 +1,12 @@
 import { Soup, Star } from 'lucide-react';
 import { useData } from '@/store/DataContext';
-import { ResourcePage } from '@/components/ResourcePage';
+import { ResourcePage, type Column } from '@/components/ResourcePage';
 import { AttachmentField } from '@/components/AttachmentField';
+import { PackFields, PackPriceCell } from '@/components/Packaging';
 import { Badge, Checkbox, Field, Select, type Tone } from '@/components/ui';
 import { useI18n } from '@/lib/i18n';
 import { today, useFormat } from '@/lib/format';
+import { foodGroup } from '@/lib/derive';
 import { numberOrNull, numberValue, stripMeta, type FormValues } from '@/lib/forms';
 import { FOOD_TYPES } from '@shared/schema.js';
 import type { Food } from '@shared/types';
@@ -36,7 +38,8 @@ function Stars({ rating }: { rating: number | null }) {
 export default function FoodPage() {
   const { petId, forPet } = useData();
   const { t, tEnum } = useI18n();
-  const { formatDate, formatMoney } = useFormat();
+  const { formatDate } = useFormat();
+
   const rows = [...forPet('foods')].sort((a, b) => Number(b.current) - Number(a.current) || a.product.localeCompare(b.product));
 
   const blank = (): Values => ({
@@ -49,12 +52,45 @@ export default function FoodPage() {
     startDate: today(),
     endDate: '',
     current: true,
+    packSize: null,
+    packUnit: 'kg',
     cost: null,
     rating: null,
     tolerance: '',
     notes: '',
     attachments: [],
   });
+
+  const priceColumn: Column<Food> = { header: t('pack.priceColumn'), render: (row) => <PackPriceCell item={row} /> };
+
+  const nameColumn = (header: string): Column<Food> => ({
+    header,
+    render: (row) => (
+      <div>
+        <p className="font-medium text-stone-900 dark:text-stone-100">{row.product}</p>
+        {row.brand && <p className="text-xs text-stone-500">{row.brand}</p>}
+      </div>
+    ),
+  });
+
+  const amountColumn: Column<Food> = {
+    header: t('food.amount'),
+    render: (row) => (
+      <span>
+        {row.amountPerDay || '—'}
+        {row.timesPerDay ? ` · ${t('dash.perDay', { n: row.timesPerDay })}` : ''}
+      </span>
+    ),
+  };
+
+  const statusColumns: Column<Food>[] = [
+    {
+      header: t('common.status'),
+      render: (row) => (row.current ? <Badge tone="green">{t('food.current')}</Badge> : <Badge tone="neutral">{t('food.stopped')}</Badge>),
+    },
+    { header: t('food.since'), render: (row) => formatDate(row.startDate) },
+    { header: t('food.rating'), render: (row) => <Stars rating={row.rating} /> },
+  ];
 
   return (
     <ResourcePage<Food, Values>
@@ -65,37 +101,30 @@ export default function FoodPage() {
       emptyIcon={Soup}
       emptyTitle={t('food.emptyTitle')}
       emptyMessage={t('food.emptyMessage')}
-      rows={rows}
       describe={(row) => [row.brand, row.product].filter(Boolean).join(' ')}
       defaults={blank}
       toValues={stripMeta}
-      columns={[
+      // Two tables, because the two shelves are priced differently: the everyday
+      // bags and tins compare by the kilo, treats by the item.
+      sections={[
         {
-          header: t('food.food'),
-          render: (row) => (
-            <div>
-              <p className="font-medium text-stone-900 dark:text-stone-100">{row.product}</p>
-              {row.brand && <p className="text-xs text-stone-500">{row.brand}</p>}
-            </div>
-          ),
-        },
-        { header: t('common.type'), render: (row) => <Badge tone={TYPE_TONE[row.type]}>{tEnum('foodType', row.type)}</Badge> },
-        {
-          header: t('food.amount'),
-          render: (row) => (
-            <span>
-              {row.amountPerDay || '—'}
-              {row.timesPerDay ? ` · ${t('dash.perDay', { n: row.timesPerDay })}` : ''}
-            </span>
-          ),
+          title: t('food.regularSection'),
+          emptyMessage: t('food.noRegular'),
+          rows: rows.filter((row) => foodGroup(row) === 'regular'),
+          columns: [
+            nameColumn(t('food.food')),
+            { header: t('common.type'), render: (row) => <Badge tone={TYPE_TONE[row.type]}>{tEnum('foodType', row.type)}</Badge> },
+            amountColumn,
+            priceColumn,
+            ...statusColumns,
+          ],
         },
         {
-          header: t('common.status'),
-          render: (row) => (row.current ? <Badge tone="green">{t('food.current')}</Badge> : <Badge tone="neutral">{t('food.stopped')}</Badge>),
+          title: t('food.snacksSection'),
+          emptyMessage: t('food.noSnacks'),
+          rows: rows.filter((row) => foodGroup(row) === 'snack'),
+          columns: [nameColumn(t('food.snack')), amountColumn, priceColumn, ...statusColumns],
         },
-        { header: t('food.since'), render: (row) => formatDate(row.startDate) },
-        { header: t('food.rating'), render: (row) => <Stars rating={row.rating} /> },
-        { header: t('common.cost'), render: (row) => formatMoney(row.cost) },
       ]}
       renderForm={({ values, set, errors }) => (
         <>
@@ -116,12 +145,18 @@ export default function FoodPage() {
                 placeholder={t('food.brandPlaceholder')}
               />
             </Field>
-            <Field label={t('common.type')}>
+            <Field label={t('common.type')} hint={t('food.typeHint')}>
               <Select
                 options={FOOD_TYPES}
                 group="foodType"
                 value={values.type}
-                onChange={(e) => set({ type: e.target.value as Values['type'] })}
+                onChange={(e) => {
+                  const type = e.target.value as Values['type'];
+                  // A treat is bought by the item, not by weight. Only pre-set the
+                  // unit while the pack is still blank — never overwrite a real one.
+                  const packUnit = values.packSize === null ? (type === 'treat' ? 'unit' : 'kg') : values.packUnit;
+                  set({ type, packUnit });
+                }}
               />
             </Field>
             <Field label={t('food.amountPerDay')} hint={t('food.amountHint')}>
@@ -141,16 +176,7 @@ export default function FoodPage() {
                 onChange={(e) => set({ timesPerDay: numberOrNull(e.target.value) })}
               />
             </Field>
-            <Field label={t('food.costPerUnit')}>
-              <input
-                type="number"
-                step="0.01"
-                min="0"
-                className="input"
-                value={numberValue(values.cost)}
-                onChange={(e) => set({ cost: numberOrNull(e.target.value) })}
-              />
-            </Field>
+            <PackFields values={values} set={set} />
             <Field label={t('food.started')}>
               <input type="date" className="input" value={values.startDate} onChange={(e) => set({ startDate: e.target.value })} />
             </Field>

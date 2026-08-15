@@ -78,6 +78,8 @@ function cascade(db, collection, id, removed) {
   // An appointment owns the weigh-in it generated, so that goes with it.
   if (collection === 'appointments') {
     if (removed?.weightId) db.weights = db.weights.filter((w) => w.id !== removed.weightId);
+    // Whatever visit it was booked to follow up on is waiting to be booked again.
+    for (const record of db.appointments) if (record.followUpAppointmentId === id) record.followUpAppointmentId = '';
     return;
   }
   if (collection === 'medications' || collection === 'foods') {

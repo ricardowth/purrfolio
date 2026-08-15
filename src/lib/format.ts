@@ -43,8 +43,12 @@ export const byDateDesc =
 export interface Formatters {
   /** 'YYYY-MM-DD' or an ISO timestamp -> '14 ago 2026'. Blank input gives an em dash. */
   formatDate: (value?: string | null) => string;
+  /** 'YYYY-MM' -> 'outubro 2026', for things scheduled to a month. */
+  formatMonth: (value?: string | null) => string;
   formatDateTime: (value?: string | null) => string;
   formatMoney: (value?: number | null) => string;
+  /** Plain number in the locale's notation: 1.5 -> '1,5' in Portuguese. */
+  formatNumber: (value?: number | null) => string;
   /** '3 days ago', 'in 2 weeks', 'today'. */
   relativeDays: (value?: string | null) => string;
   /** Human age from a birth date, e.g. '3 anos, 2 meses'. */
@@ -60,13 +64,21 @@ export function createFormatters({ locale, t, tn }: I18n): Formatters {
     hour: '2-digit',
     minute: '2-digit',
   });
+  const monthFmt = new Intl.DateTimeFormat(locale, { month: 'long', year: 'numeric' });
   const moneyFmt = new Intl.NumberFormat(locale, { style: 'currency', currency: 'EUR' });
+  const numberFmt = new Intl.NumberFormat(locale, { maximumFractionDigits: 2 });
   const relativeFmt = new Intl.RelativeTimeFormat(locale, { numeric: 'auto' });
 
   const formatDate: Formatters['formatDate'] = (value) => {
     if (!value) return '—';
     const date = new Date(value.length === 10 ? `${value}T00:00:00` : value);
     return Number.isNaN(date.getTime()) ? value : dateFmt.format(date);
+  };
+
+  const formatMonth: Formatters['formatMonth'] = (value) => {
+    if (!value) return '—';
+    const date = new Date(`${value}-01T00:00:00`);
+    return Number.isNaN(date.getTime()) ? value : monthFmt.format(date);
   };
 
   const formatDateTime: Formatters['formatDateTime'] = (value) => {
@@ -77,6 +89,9 @@ export function createFormatters({ locale, t, tn }: I18n): Formatters {
 
   const formatMoney: Formatters['formatMoney'] = (value) =>
     value === null || value === undefined ? '—' : moneyFmt.format(value);
+
+  const formatNumber: Formatters['formatNumber'] = (value) =>
+    value === null || value === undefined ? '—' : numberFmt.format(value);
 
   const relativeDays: Formatters['relativeDays'] = (value) => {
     const days = daysFromToday(value);
@@ -112,7 +127,7 @@ export function createFormatters({ locale, t, tn }: I18n): Formatters {
     return parts.join(', ');
   };
 
-  return { formatDate, formatDateTime, formatMoney, relativeDays, formatAge };
+  return { formatDate, formatMonth, formatDateTime, formatMoney, formatNumber, relativeDays, formatAge };
 }
 
 /** Formatters bound to the language currently selected. */

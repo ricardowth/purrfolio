@@ -31,11 +31,14 @@ export function ContactSelect({
   );
 }
 
-/** Contact name for display in a table cell. */
-export function ContactName({ id }: { id: string }) {
+/**
+ * Contact name for display in a table cell. `fallback` covers records written
+ * before contacts existed, which kept the clinic as free text.
+ */
+export function ContactName({ id, fallback }: { id: string; fallback?: string }) {
   const { contactById } = useData();
   const contact = contactById(id);
-  if (!contact) return <>—</>;
+  if (!contact) return <>{fallback || '—'}</>;
   return (
     <span title={[contact.organisation, contact.phone].filter(Boolean).join(' · ')}>{contact.name}</span>
   );

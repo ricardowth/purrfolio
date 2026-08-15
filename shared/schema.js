@@ -16,6 +16,8 @@ import { z } from 'zod';
 
 /** 'YYYY-MM-DD', or '' when the field is left blank. */
 const isoDate = z.union([z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'validation.date'), z.literal('')]);
+/** 'YYYY-MM', for things scheduled to a month rather than a day. */
+const isoMonth = z.union([z.string().regex(/^\d{4}-\d{2}$/, 'validation.month'), z.literal('')]);
 /** Full ISO timestamp, or '' when left blank. */
 const isoDateTime = z.union([z.string().datetime({ offset: true }), z.string().regex(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/), z.literal('')]);
 
@@ -54,11 +56,27 @@ export const APPOINTMENT_TYPES = ['checkup', 'vaccination', 'surgery', 'dental',
 export const APPOINTMENT_STATUSES = ['scheduled', 'completed', 'cancelled'];
 export const MED_ROUTES = ['oral', 'topical', 'injection', 'ocular', 'aural', 'inhaled', 'other'];
 export const FOOD_TYPES = ['dry', 'wet', 'treat', 'prescription', 'supplement'];
+/** How a food is sold: a 1.5 kg bag, a 195 g tin, a box of 30 sachets. */
+export const PACK_UNITS = ['kg', 'g', 'l', 'ml', 'unit'];
+export const SUPPLY_CATEGORIES = ['skin', 'grooming', 'litter', 'accessory', 'other'];
 export const CONTACT_ROLES = ['vet', 'clinic', 'sitter', 'groomer', 'emergency', 'other'];
 export const CARE_TYPES = ['sitter', 'boarding', 'travel', 'other'];
 export const JOURNAL_TAGS = ['behaviour', 'litter', 'grooming', 'mood', 'symptom', 'milestone', 'other'];
 
 const enumOf = (values, fallback) => z.enum(values).default(fallback ?? values[0]);
+
+/**
+ * How something is sold. `packSize` is what one package holds — 1.5 (kg), 195
+ * (g), 30 (unit) — and `cost` is what that one package costs, so the two
+ * together reduce to the €/kg or €/item that actually compares across brands.
+ * Both null on records written before this existed: they still show their
+ * price, just without a unit price under it.
+ */
+const packaging = (defaultUnit) => ({
+  packSize: z.number().positive().nullable().default(null),
+  packUnit: enumOf(PACK_UNITS, defaultUnit),
+  cost: money,
+});
 
 // --- collections -----------------------------------------------------------
 
@@ -82,12 +100,22 @@ export const PetSchema = z.object({
   archived: z.boolean().default(false),
 });
 
+/** One zone of the body, e.g. the left ear. */
+const IssuePartSchema = z.object({
+  bodyPart: z.string().min(1),
+  side: enumOf(SIDES, 'none'),
+});
+
 export const IssueSchema = z.object({
   ...serverOwned,
   ...belongsToPet,
   title: z.string().min(1, 'validation.title'),
-  bodyPart: z.string().min(1, 'validation.bodyPart'),
-  side: enumOf(SIDES, 'none'),
+  /**
+   * Every zone the problem touches — both ears at once, or an ear and an eye.
+   * Never empty; records written when an issue had a single `bodyPart` are
+   * lifted into a one-zone list as the file is read.
+   */
+  parts: z.array(IssuePartSchema).min(1, 'validation.bodyPart'),
   severity: enumOf(SEVERITIES, 'low'),
   status: enumOf(ISSUE_STATUSES, 'active'),
   onsetDate: optDate,
@@ -127,6 +155,8 @@ export const AppointmentSchema = z.object({
   /** Weigh-in generated from `weightKg`, so editing the appointment updates it. */
   weightId: text,
   followUpDate: optDate,
+  /** The appointment booked to cover `followUpDate`; empty means still to book. */
+  followUpAppointmentId: text,
   issueIds: idList,
   /** Prescribed at, or changed by, this visit. */
   medicationIds: idList,
@@ -171,6 +201,22 @@ export const MedicationSchema = z.object({
   attachments,
 });
 
+export const DewormingSchema = z.object({
+  ...serverOwned,
+  ...belongsToPet,
+  product: z.string().min(1, 'validation.productName'),
+  date: isoDate,
+  /**
+   * The month the next dose is due. A month, not a date: deworming runs on
+   * "every three months", and inventing a day would be false precision.
+   */
+  nextMonth: isoMonth.default(''),
+  target: text,
+  cost: money,
+  notes: text,
+  attachments,
+});
+
 export const FoodSchema = z.object({
   ...serverOwned,
   ...belongsToPet,
@@ -182,9 +228,30 @@ export const FoodSchema = z.object({
   startDate: optDate,
   endDate: optDate,
   current: z.boolean().default(true),
-  cost: money,
+  ...packaging('kg'),
   rating: z.number().int().min(0).max(5).nullable().default(null),
   tolerance: text,
+  notes: text,
+  attachments,
+});
+
+/**
+ * Everything else that gets bought for the cat and used up: sunscreen, shampoo,
+ * litter, a brush. Not food, not medication — but priced the same way, and
+ * often bought because of a specific problem, hence `issueIds`.
+ */
+export const SupplySchema = z.object({
+  ...serverOwned,
+  ...belongsToPet,
+  brand: text,
+  product: z.string().min(1, 'validation.productName'),
+  category: enumOf(SUPPLY_CATEGORIES, 'other'),
+  /** What it is for, in your own words: 'protetor solar para as orelhas'. */
+  purpose: text,
+  purchaseDate: optDate,
+  current: z.boolean().default(true),
+  ...packaging('unit'),
+  issueIds: idList,
   notes: text,
   attachments,
 });
@@ -251,7 +318,9 @@ export const COLLECTIONS = {
   appointments: AppointmentSchema,
   vaccinations: VaccinationSchema,
   medications: MedicationSchema,
+  dewormings: DewormingSchema,
   foods: FoodSchema,
+  supplies: SupplySchema,
   weights: WeightSchema,
   careEvents: CareEventSchema,
   contacts: ContactSchema,
@@ -271,6 +340,21 @@ export function emptyDatabase() {
 }
 
 /**
+ * Record shapes that predate the current schema, lifted forward as the file is
+ * read. They live here rather than inside the schemas because `crud.js` reads
+ * `schema.shape`, which wrapping a schema in a zod transform would hide.
+ */
+const MIGRATIONS = {
+  // An issue used to sit on exactly one body part; now it names as many as it
+  // touches. Anything without a part at all lands on the whole-body catch-all,
+  // which is where the old form's default put it.
+  issues: (record) =>
+    Array.isArray(record.parts)
+      ? record
+      : { ...record, parts: [{ bodyPart: record.bodyPart || 'general', side: record.side || 'none' }] },
+};
+
+/**
  * Coerce whatever is on disk into a valid database: guarantees every collection
  * exists as an array, and fills in schema defaults on every record, so a
  * hand-edited or partial file can't crash the server — and so records written
@@ -288,9 +372,10 @@ export function normaliseDatabase(raw) {
   for (const name of COLLECTION_NAMES) {
     if (!Array.isArray(raw[name])) continue;
     const schema = COLLECTIONS[name];
+    const migrate = MIGRATIONS[name];
     db[name] = raw[name].map((record) => {
       if (!record || typeof record !== 'object') return record;
-      const parsed = schema.safeParse(record);
+      const parsed = schema.safeParse(migrate ? migrate(record) : record);
       // Defaults come from the schema; identity and timestamps stay untouched.
       return parsed.success ? { ...parsed.data, id: record.id, createdAt: record.createdAt, updatedAt: record.updatedAt } : record;
     });

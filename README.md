@@ -135,8 +135,8 @@ both [vite.config.ts](vite.config.ts) and [tsconfig.json](tsconfig.json).
 ## API at a glance
 
 Every collection — `pets`, `issues`, `appointments`, `vaccinations`,
-`medications`, `foods`, `weights`, `careEvents`, `contacts`, `journal`,
-`documents` — gets the same REST routes:
+`medications`, `dewormings`, `foods`, `supplies`, `weights`, `careEvents`,
+`contacts`, `journal`, `documents` — gets the same REST routes:
 
 ```
 GET    /api/:collection          list (add ?petId=… to filter)

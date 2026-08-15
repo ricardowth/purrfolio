@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Plus, X } from 'lucide-react';
 import { useData } from '@/store/DataContext';
 import { ApiError, apiMessage, translateFieldErrors } from '@/lib/api';
 import { CatBody, type PartSelection } from '@/anatomy/CatBody';
@@ -9,15 +10,18 @@ import { useI18n } from '@/lib/i18n';
 import { today } from '@/lib/format';
 import { stripMeta, type FormValues } from '@/lib/forms';
 import { ISSUE_STATUSES, SEVERITIES } from '@shared/schema.js';
-import type { Issue, Side } from '@shared/types';
+import type { Issue, IssuePart } from '@shared/types';
 
 type Values = FormValues<Issue>;
+
+const samePart = (a: IssuePart, b: IssuePart) => a.bodyPart === b.bodyPart && a.side === b.side;
 
 const blank = (petId: string, part?: PartSelection | null): Values => ({
   petId,
   title: '',
-  bodyPart: part?.bodyPart ?? 'general',
-  side: part?.side ?? 'none',
+  // Nothing is assumed: an issue names the zones it touches, and the map below
+  // is the only way to say so.
+  parts: part ? [part] : [],
   severity: 'low',
   status: 'active',
   onsetDate: today(),
@@ -54,27 +58,44 @@ export function IssueEditor({
   const [formError, setFormError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [viewSide, setViewSide] = useState<'left' | 'right'>(initialPart?.side === 'right' ? 'right' : 'left');
-  const [showInternal, setShowInternal] = useState(Boolean(issue && REGIONS_BY_ID.get(issue.bodyPart)?.internal));
+  const [showInternal, setShowInternal] = useState(false);
 
   // Reset the form each time the modal is opened.
   useEffect(() => {
     if (!open) return;
+    const parts = issue ? issue.parts : initialPart ? [initialPart] : [];
     setValues(issue ? stripMeta(issue) : blank(petId, initialPart));
     setErrors({});
     setFormError(null);
-    const side = issue?.side ?? initialPart?.side;
-    if (side === 'left' || side === 'right') setViewSide(side);
-    const part = issue?.bodyPart ?? initialPart?.bodyPart;
-    setShowInternal(Boolean(part && REGIONS_BY_ID.get(part)?.internal));
+    const sided = parts.find((part) => part.side === 'left' || part.side === 'right');
+    if (sided) setViewSide(sided.side as 'left' | 'right');
+    setShowInternal(parts.some((part) => REGIONS_BY_ID.get(part.bodyPart)?.internal));
   }, [open, issue, initialPart, petId]);
 
   const set = (patch: Partial<Values>) => setValues((prev) => ({ ...prev, ...patch }));
-  const region = REGIONS_BY_ID.get(values.bodyPart);
 
-  function selectPart(selection: PartSelection) {
-    set({ bodyPart: selection.bodyPart, side: selection.side });
-    if (selection.side === 'left' || selection.side === 'right') setViewSide(selection.side);
+  const isPicked = (part: IssuePart) => values.parts.some((picked) => samePart(picked, part));
+
+  /** Clicking a zone adds it; clicking it again takes it off. */
+  function togglePart(selection: PartSelection) {
+    if (isPicked(selection)) {
+      set({ parts: values.parts.filter((part) => !samePart(part, selection)) });
+      return;
+    }
+    set({ parts: [...values.parts, selection] });
+    // Turning the cat around mid-pick is disorienting once a zone is already
+    // marked, so only the first pick swings the view to the side it is on.
+    if (values.parts.length === 0 && (selection.side === 'left' || selection.side === 'right')) setViewSide(selection.side);
   }
+
+  /**
+   * Both ears, both eyes, both hind paws: the symmetric case is common enough
+   * that finding the mirrored shape on the other view is worth saving.
+   */
+  const mirrored: IssuePart | null =
+    values.parts.length === 1 && (values.parts[0].side === 'left' || values.parts[0].side === 'right')
+      ? { bodyPart: values.parts[0].bodyPart, side: values.parts[0].side === 'left' ? 'right' : 'left' }
+      : null;
 
   async function submit() {
     setSubmitting(true);
@@ -147,8 +168,8 @@ export function IssueEditor({
             issues={issues.filter((item) => item.id !== issue?.id)}
             viewSide={viewSide}
             showInternal={showInternal}
-            selected={{ bodyPart: values.bodyPart, side: values.side }}
-            onSelect={selectPart}
+            selected={values.parts}
+            onSelect={togglePart}
             className="rounded-lg border border-stone-200 p-2 dark:border-stone-800"
           />
 
@@ -157,10 +178,10 @@ export function IssueEditor({
               <button
                 key={item.id}
                 type="button"
-                onClick={() => set({ bodyPart: item.id, side: 'none' })}
+                onClick={() => togglePart({ bodyPart: item.id, side: 'none' })}
                 className={cx(
                   'badge cursor-pointer',
-                  values.bodyPart === item.id
+                  isPicked({ bodyPart: item.id, side: 'none' })
                     ? 'bg-amber-600 text-white'
                     : 'bg-stone-200 text-stone-700 hover:bg-stone-300 dark:bg-stone-800 dark:text-stone-300',
                 )}
@@ -170,25 +191,38 @@ export function IssueEditor({
             ))}
           </div>
 
-          <p className="mt-2 text-sm">
-            <span className="text-stone-500">{t('issueEditor.selected')}</span>
-            <span className="font-medium text-stone-900 dark:text-stone-100">{describePart(i18n, values.bodyPart, values.side)}</span>
-          </p>
-          {errors.bodyPart && <p className="mt-1 text-xs font-medium text-red-600">{errors.bodyPart}</p>}
+          <div className="mt-3">
+            <span className="label">{t('issueEditor.selected')}</span>
+            {values.parts.length === 0 ? (
+              <p className="text-sm text-stone-400 dark:text-stone-500">{t('issueEditor.nonePicked')}</p>
+            ) : (
+              <div className="flex flex-wrap gap-1.5">
+                {values.parts.map((part) => (
+                  <span
+                    key={`${part.bodyPart}|${part.side}`}
+                    className="badge gap-1 bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-200"
+                  >
+                    {describePart(i18n, part.bodyPart, part.side)}
+                    <button
+                      type="button"
+                      onClick={() => togglePart(part)}
+                      aria-label={t('issueEditor.removeZone', { zone: describePart(i18n, part.bodyPart, part.side) })}
+                      className="cursor-pointer"
+                    >
+                      <X className="size-3" />
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
+            {errors.parts && <p className="mt-1 text-xs font-medium text-red-600">{errors.parts}</p>}
+          </div>
 
-          {region?.sided && (
-            <Field label={t('issueEditor.side')} className="mt-3">
-              <Select
-                options={['left', 'right', 'none']}
-                group="side"
-                value={values.side}
-                onChange={(e) => {
-                  const side = e.target.value as Side;
-                  set({ side });
-                  if (side === 'left' || side === 'right') setViewSide(side);
-                }}
-              />
-            </Field>
+          {mirrored && (
+            <button type="button" className="btn-ghost mt-2 text-xs" onClick={() => togglePart(mirrored)}>
+              <Plus className="size-3.5" />
+              {t('issueEditor.addOtherSide', { zone: describePart(i18n, mirrored.bodyPart, mirrored.side) })}
+            </button>
           )}
         </div>
 

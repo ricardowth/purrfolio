@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import { useData } from '@/store/DataContext';
 import { useI18n } from '@/lib/i18n';
 import { Badge, SEVERITY_TONE } from '@/components/ui';
-import { describePart } from '@/anatomy/regions';
+import { describeParts } from '@/anatomy/regions';
 
 /** Checkbox list for linking a record to the health issues it relates to. */
 export function IssuePicker({ value, onChange }: { value: string[]; onChange: (ids: string[]) => void }) {
@@ -38,7 +38,7 @@ export function IssuePicker({ value, onChange }: { value: string[]; onChange: (i
             className="size-4 rounded border-stone-300 text-amber-600 focus:ring-amber-500/40 dark:border-stone-600 dark:bg-stone-900"
           />
           <span className="flex-1 truncate">{issue.title}</span>
-          <span className="text-xs text-stone-500">{describePart(i18n, issue.bodyPart, issue.side)}</span>
+          <span className="text-xs text-stone-500">{describeParts(i18n, issue.parts)}</span>
         </label>
       ))}
     </div>
@@ -46,9 +46,9 @@ export function IssuePicker({ value, onChange }: { value: string[]; onChange: (i
 }
 
 /** Read-only chips linking back to the issues a record is attached to. */
-export function IssueChips({ ids }: { ids: string[] }) {
+export function IssueChips({ ids }: { ids?: string[] }) {
   const { forPet } = useData();
-  const issues = forPet('issues').filter((issue) => ids.includes(issue.id));
+  const issues = forPet('issues').filter((issue) => ids?.includes(issue.id));
   if (issues.length === 0) return <span className="text-stone-400">—</span>;
 
   return (
