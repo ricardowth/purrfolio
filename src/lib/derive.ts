@@ -1,6 +1,18 @@
-import { daysFromToday, today } from '@/lib/format';
+import { byDateDesc, daysFromToday, today } from '@/lib/format';
 import type { I18n } from '@/lib/i18n';
-import type { Appointment, CareEvent, Deworming, Food, Issue, Medication, PackUnit, Supply, Vaccination, Weight } from '@shared/types';
+import type {
+  Appointment,
+  CareEvent,
+  Deworming,
+  Food,
+  FoodPurchase,
+  Issue,
+  Medication,
+  PackUnit,
+  Supply,
+  Vaccination,
+  Weight,
+} from '@shared/types';
 
 /** Categories money can fall into, in the fixed order the chart paints them. */
 export const COST_CATEGORIES = [
@@ -48,7 +60,11 @@ export function costEntries(sources: CostSources): CostEntry[] {
   for (const row of sources.vaccinations) add('vaccinations', row.date, row.cost, row.name);
   for (const row of sources.medications) add('medications', row.startDate, row.cost, row.name);
   for (const row of sources.dewormings) add('dewormings', row.date, row.cost, row.product);
-  for (const row of sources.foods) add('foods', row.startDate, row.cost, [row.brand, row.product].filter(Boolean).join(' '));
+  // Each shop trip is its own expense, on the day it happened.
+  for (const row of sources.foods) {
+    const label = [row.brand, row.product].filter(Boolean).join(' ');
+    for (const purchase of row.purchases) add('foods', purchase.date, purchaseTotal(purchase), label);
+  }
   for (const row of sources.supplies) add('supplies', row.purchaseDate, row.cost, [row.brand, row.product].filter(Boolean).join(' '));
   for (const row of sources.careEvents) add('careEvents', row.startDate, row.cost, row.title);
 
@@ -153,13 +169,61 @@ export const currentFoods = (foods: Food[]) => foods.filter((food) => food.curre
 export type FoodGroup = 'regular' | 'snack';
 export const foodGroup = (food: Food): FoodGroup => (food.type === 'treat' ? 'snack' : 'regular');
 
+/**
+ * Buying history. Prices move — a bag is 20,50 € one month and 23,99 € the
+ * next — so what was paid belongs to the shop trip, not to the food itself.
+ * Every price on this page comes from here.
+ */
+
+/** Newest trip first: the last one is the price that still stands. */
+export const sortedPurchases = (purchases: FoodPurchase[]) => [...purchases].sort(byDateDesc((row) => row.date));
+
+/** What one trip cost in total: n packs at that day's price. */
+export const purchaseTotal = (purchase: FoodPurchase) => (purchase.cost === null ? null : purchase.cost * purchase.quantity);
+
+/** The most recent trip that names a price, i.e. what the pack costs today. */
+export function latestPurchase(purchases: FoodPurchase[]): FoodPurchase | null {
+  return sortedPurchases(purchases).find((row) => row.cost !== null) ?? null;
+}
+
+/**
+ * The pack priced at what was last actually paid for it. A food carries no
+ * price of its own: shelf prices move, so the only honest answer to "what does
+ * this cost?" is what the last bag cost — and unpriced until one is recorded.
+ */
+export function pricedPack(food: Food): Packaged {
+  return { packSize: food.packSize, packUnit: food.packUnit, cost: latestPurchase(food.purchases)?.cost ?? null };
+}
+
+/** Packs brought home and money spent, across every recorded trip. */
+export function purchaseTotals(purchases: FoodPurchase[]) {
+  let packs = 0;
+  let spent = 0;
+  for (const purchase of purchases) {
+    packs += purchase.quantity;
+    spent += purchaseTotal(purchase) ?? 0;
+  }
+  return { packs, spent };
+}
+
+/** What a pack cost the time before last — for showing which way prices moved. */
+export function priceChange(purchases: FoodPurchase[]): { from: number; to: number } | null {
+  const priced = sortedPurchases(purchases).filter((row) => row.cost !== null);
+  if (priced.length < 2 || priced[0].cost === priced[1].cost) return null;
+  return { from: priced[1].cost!, to: priced[0].cost! };
+}
+
 /** What a price ends up being quoted in. */
 export type PriceBasis = 'kg' | 'l' | 'item';
 
-/** Anything sold in a package and priced by it: food, snacks, products. */
-export interface Packaged {
+/** Anything sold in a package: a 1.5 kg bag, a 195 g tin, a box of 30 sachets. */
+export interface Pack {
   packSize: number | null;
   packUnit: PackUnit;
+}
+
+/** A pack with a price against it — the pair that reduces to a unit price. */
+export interface Packaged extends Pack {
   cost: number | null;
 }
 

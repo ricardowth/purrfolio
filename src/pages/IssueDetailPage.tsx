@@ -112,8 +112,7 @@ export default function IssueDetailPage() {
     .sort((a, b) => b.dateTime.localeCompare(a.dateTime));
   const medications = forPet('medications').filter((medication) => medication.issueIds.includes(issue.id));
   const updates = [...issue.updates].sort((a, b) => b.date.localeCompare(a.date));
-  // The map opens on the side and overlay that show what the issue is about.
-  const sidedPart = issue.parts.find((part) => part.side === 'left' || part.side === 'right');
+  // The map opens with the organ overlay on when that is what the issue is about.
   const hasInternal = issue.parts.some((part) => REGIONS_BY_ID.get(part.bodyPart)?.internal);
 
   async function removeUpdate(updateId: string) {
@@ -225,7 +224,6 @@ export default function IssueDetailPage() {
             <p className="section-title mb-2">{t('issueDetail.location')}</p>
             <CatBody
               issues={[issue]}
-              viewSide={sidedPart?.side === 'right' ? 'right' : 'left'}
               showInternal={hasInternal}
               selected={issue.parts}
             />

@@ -9,6 +9,12 @@ import { PT_REGION_GENDER, type StringKey } from '@/lib/strings';
  *   2. the silhouette — the neutral body outline
  *   3. `near`/`flat` — the clickable, colour-coded anatomical regions
  *
+ * `near` is always the cat's left, `far` always its right — the map shows both
+ * sides at once rather than asking which one you are looking at. That only
+ * works if every sided region owns a shape on each side, so the ones a true
+ * profile would hide (the far eye, the far kidney) are drawn anyway, shifted
+ * back and up as if seen from three-quarters on.
+ *
  * Everything here is plain geometry so the rendering component stays dumb and
  * the region list can grow without touching it.
  */
@@ -72,6 +78,12 @@ const nearFar = (d: string, offset: [number, number]): Shape[] => [
   { kind: 'path', d, layer: 'far', translate: offset },
 ];
 
+/** The same shape twice, once per side, so neither can drift from the other. */
+const bothSides = (shape: Shape, offset: [number, number]): Shape[] => [
+  { ...shape, layer: 'near' },
+  { ...shape, layer: 'far', translate: offset },
+];
+
 /**
  * Order matters: regions are painted in sequence, so broad areas come first and
  * the smaller features that sit on top of them come later.
@@ -92,7 +104,7 @@ export const REGIONS: Region[] = [
       { kind: 'path', d: 'M 96,40 L 110,74 L 80,60 Z', layer: 'far' },
     ],
   },
-  { id: 'eye', group: 'head', sided: true, shapes: [ellipse(67, 91, 10, 8, { layer: 'near' })] },
+  { id: 'eye', group: 'head', sided: true, shapes: bothSides(ellipse(67, 91, 10, 8), [33, -6]) },
   { id: 'nose', group: 'head', shapes: [ellipse(45, 100, 9, 7)] },
   { id: 'mouth', group: 'head', shapes: [ellipse(52, 113, 15, 11)] },
   { id: 'neck', group: 'head', shapes: [ellipse(124, 122, 24, 22)] },
@@ -118,7 +130,7 @@ export const REGIONS: Region[] = [
   { id: 'liver', group: 'internal', internal: true, shapes: [ellipse(188, 154, 20, 15)] },
   { id: 'stomach', group: 'internal', internal: true, shapes: [ellipse(212, 140, 23, 17)] },
   { id: 'intestines', group: 'internal', internal: true, shapes: [ellipse(240, 164, 31, 17)] },
-  { id: 'kidney', group: 'internal', internal: true, sided: true, shapes: [ellipse(264, 126, 14, 11)] },
+  { id: 'kidney', group: 'internal', internal: true, sided: true, shapes: bothSides(ellipse(264, 126, 14, 11), [20, -13]) },
   { id: 'bladder', group: 'internal', internal: true, shapes: [ellipse(284, 172, 14, 12)] },
 
   // --- not on the diagram ---
@@ -149,6 +161,6 @@ export function describePart(i18n: I18n, bodyPart: string, side: string): string
   return `${side === 'left' ? 'Left' : 'Right'} ${label.charAt(0).toLowerCase()}${label.slice(1)}`;
 }
 
-/** Every zone one issue touches, on one line: 'Orelha esquerda, Orelha direita'. */
+/** Every zone one issue touches, on one line: 'Left ear, Right ear'. */
 export const describeParts = (i18n: I18n, parts: { bodyPart: string; side: string }[]) =>
   parts.map((part) => describePart(i18n, part.bodyPart, part.side)).join(', ');

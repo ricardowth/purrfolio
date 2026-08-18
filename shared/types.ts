@@ -57,6 +57,8 @@ export type JournalEntry = Record_<typeof JournalSchema>;
 export type PetDocument = Record_<typeof DocumentSchema>;
 
 export type IssueUpdate = Issue['updates'][number];
+/** One shop trip for a food: n packs at what a pack cost that day. */
+export type FoodPurchase = Food['purchases'][number];
 export type DoseLogEntry = Medication['doseLog'][number];
 
 export type Severity = Issue['severity'];

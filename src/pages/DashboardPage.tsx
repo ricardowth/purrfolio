@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Activity,
@@ -71,7 +71,6 @@ export default function DashboardPage() {
   const i18n = useI18n();
   const { t, tEnum } = i18n;
   const { formatAge, formatDate, formatDateTime, formatMonth, relativeDays } = useFormat();
-  const [viewSide, setViewSide] = useState<'left' | 'right'>('left');
 
   const issues = forPet('issues');
   const appointments = forPet('appointments');
@@ -359,22 +358,7 @@ export default function DashboardPage() {
                 {t('common.open')}
               </Link>
             </div>
-            <CatBody issues={issues} viewSide={viewSide} showInternal={showInternal} showOffDiagram />
-            <div className="mt-2 flex justify-center gap-1 text-xs">
-              {(['left', 'right'] as const).map((side) => (
-                <button
-                  key={side}
-                  type="button"
-                  onClick={() => setViewSide(side)}
-                  className={cx(
-                    'cursor-pointer rounded px-2 py-1 font-medium',
-                    viewSide === side ? 'bg-stone-200 text-stone-800 dark:bg-stone-800 dark:text-stone-200' : 'text-stone-500',
-                  )}
-                >
-                  {tEnum('side', side)}
-                </button>
-              ))}
-            </div>
+            <CatBody issues={issues} showInternal={showInternal} showOffDiagram />
           </section>
 
           {open.length > 0 && (

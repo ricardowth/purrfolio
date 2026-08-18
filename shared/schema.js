@@ -66,15 +66,19 @@ export const JOURNAL_TAGS = ['behaviour', 'litter', 'grooming', 'mood', 'symptom
 const enumOf = (values, fallback) => z.enum(values).default(fallback ?? values[0]);
 
 /**
- * How something is sold. `packSize` is what one package holds — 1.5 (kg), 195
- * (g), 30 (unit) — and `cost` is what that one package costs, so the two
- * together reduce to the €/kg or €/item that actually compares across brands.
- * Both null on records written before this existed: they still show their
- * price, just without a unit price under it.
+ * How something is sold: `packSize` is what one package holds — 1.5 (kg), 195
+ * (g), 30 (unit). Paired with a price it reduces to the €/kg or €/item that
+ * actually compares across brands. Null on records written before this existed:
+ * they still show their price, just without a unit price under it.
  */
-const packaging = (defaultUnit) => ({
+const packSizing = (defaultUnit) => ({
   packSize: z.number().positive().nullable().default(null),
   packUnit: enumOf(PACK_UNITS, defaultUnit),
+});
+
+/** Packaging plus one standing price, for things bought too rarely to track. */
+const packaging = (defaultUnit) => ({
+  ...packSizing(defaultUnit),
   cost: money,
 });
 
@@ -217,6 +221,25 @@ export const DewormingSchema = z.object({
   attachments,
 });
 
+/**
+ * One shop trip: how many packs came home that day, and what one pack cost
+ * *then*. Shelf prices move constantly, so this is the only place a food's
+ * price is written down: the newest trip is what it costs now, and the lines
+ * above it are how it got there.
+ */
+export const PurchaseSchema = z.object({
+  id: z.string(),
+  date: isoDate,
+  /** Packs bought: 2 bags, 12 tins, 1 box. */
+  quantity: z.number().positive().default(1),
+  /** Price of ONE pack on that day — not the till total for the whole trip. */
+  cost: money,
+  /** Where it was bought — the same bag is rarely the same price in two shops. */
+  place: text,
+  notes: text,
+});
+const purchases = z.array(PurchaseSchema).default([]);
+
 export const FoodSchema = z.object({
   ...serverOwned,
   ...belongsToPet,
@@ -228,7 +251,8 @@ export const FoodSchema = z.object({
   startDate: optDate,
   endDate: optDate,
   current: z.boolean().default(true),
-  ...packaging('kg'),
+  ...packSizing('kg'),
+  purchases,
   rating: z.number().int().min(0).max(5).nullable().default(null),
   tolerance: text,
   notes: text,
@@ -246,7 +270,7 @@ export const SupplySchema = z.object({
   brand: text,
   product: z.string().min(1, 'validation.productName'),
   category: enumOf(SUPPLY_CATEGORIES, 'other'),
-  /** What it is for, in your own words: 'protetor solar para as orelhas'. */
+  /** What it is for, in your own words: 'sunscreen for the ear tips'. */
   purpose: text,
   purchaseDate: optDate,
   current: z.boolean().default(true),
@@ -345,6 +369,29 @@ export function emptyDatabase() {
  * `schema.shape`, which wrapping a schema in a zod transform would hide.
  */
 const MIGRATIONS = {
+  // Food used to carry one standing `cost`, which went stale the moment the shop
+  // changed its price. The price now lives on each purchase, so a lone cost is
+  // read as what was paid when the food was started — and dropped once there are
+  // real purchases to read the price from.
+  foods: (record) => {
+    if (record.cost === null || record.cost === undefined) return record;
+    const { cost, ...rest } = record;
+    if (rest.purchases?.length) return rest;
+    return {
+      ...rest,
+      purchases: [
+        {
+          id: `${record.id}-price`,
+          date: record.startDate || (record.createdAt || '').slice(0, 10),
+          quantity: 1,
+          cost,
+          place: '',
+          notes: '',
+        },
+      ],
+    };
+  },
+
   // An issue used to sit on exactly one body part; now it names as many as it
   // touches. Anything without a part at all lands on the whole-body catch-all,
   // which is where the old form's default put it.

@@ -132,8 +132,7 @@ export const en = {
   'body.legendHigh': 'High',
   'body.legendResolved': 'Resolved',
   'body.offDiagram': 'Open issues not on the diagram',
-  'body.leftSide': 'Left side',
-  'body.rightSide': 'Right side',
+  'body.sideKey': "Solid shapes are the cat's left; the lighter ones behind are its right.",
   'body.organs': 'Organs',
 
   // --- body regions ----------------------------------------------------------
@@ -178,9 +177,6 @@ export const en = {
   'enum.issueStatus.monitoring': 'Monitoring',
   'enum.issueStatus.resolved': 'Resolved',
 
-  'enum.side.left': 'Left',
-  'enum.side.right': 'Right',
-  'enum.side.none': 'None',
 
   'enum.appointmentType.checkup': 'Checkup',
   'enum.appointmentType.vaccination': 'Vaccination',
@@ -322,9 +318,6 @@ export const en = {
   'health.filterAll': 'All',
   'health.clearFilter': 'Clear body part filter',
   'health.addIssueHere': 'Add issue here',
-  'health.legHint': 'The near-side legs are solid; the faded ones behind belong to the {side} side.',
-  'health.legHintLeft': 'left',
-  'health.legHintRight': 'right',
   'health.emptySelectedTitle': 'Nothing recorded on this part',
   'health.emptyTitle': 'No issues to show',
   'health.emptySelectedMessage': '{part} has no issues.',
@@ -511,6 +504,22 @@ export const en = {
   'food.tolerance': 'Tolerance / reaction',
   'food.toleranceHint': 'Sickness, itching, refusal — anything worth remembering before buying it again.',
   'food.attachmentsHint': 'Photo of the label or the ingredients list.',
+  'food.packSizeHint': 'What one package holds: a 1.5 kg bag, a 195 g tin, a box of 30 sachets. The price comes from the purchases below.',
+  'food.lastBought': 'Bought',
+  'food.previousPrice': 'What a pack cost the time before',
+  'food.packs.one': '{n} pack',
+  'food.packs.other': '{n} packs',
+  'food.purchases': 'Purchases',
+  'food.purchasesHint':
+    'One line per shop trip. The newest price is the one shown in the table, so a bag that went up only has to be typed in once.',
+  'food.noPurchases': 'Nothing bought yet — add a line for each bag, tin or box that came home.',
+  'food.addPurchase': 'Add line',
+  'food.purchaseDate': 'Bought on',
+  'food.purchaseQty': 'Packs',
+  'food.purchasePrice': 'Price/pack (€)',
+  'food.purchaseTotal': 'Total',
+  'food.purchasePlace': 'Where',
+  'food.purchasePlacePlaceholder': 'Zooplus, Continente…',
 
   // --- packaging & unit price (food and products) ------------------------------
   'pack.priceColumn': 'Price',
@@ -736,7 +745,7 @@ export const en = {
 export type StringKey = keyof typeof en;
 
 export const pt: Record<StringKey, string> = {
-  // --- comum -----------------------------------------------------------------
+  // --- common ----------------------------------------------------------------
   'common.cancel': 'Cancelar',
   'common.save': 'Guardar',
   'common.saving': 'A guardar…',
@@ -772,7 +781,7 @@ export const pt: Record<StringKey, string> = {
   'common.uploadFailed': 'Falha ao carregar o ficheiro',
   'common.failedLoad': 'Não foi possível carregar os dados',
 
-  // --- erros e validação -----------------------------------------------------
+  // --- errors & validation ---------------------------------------------------
   'error.offline': 'Não é possível contactar o servidor do Purrfolio. O `npm run dev` ainda está a correr?',
   'error.requestFailed': 'O pedido falhou ({status})',
   'validation.date': 'Formato esperado: AAAA-MM-DD',
@@ -786,7 +795,7 @@ export const pt: Record<StringKey, string> = {
   'validation.productName': 'O nome do produto é obrigatório',
   'validation.weightPositive': 'O peso tem de ser maior do que zero',
 
-  // --- navegação -------------------------------------------------------------
+  // --- navigation & shell ----------------------------------------------------
   'nav.overview': 'Visão geral',
   'nav.records': 'Registos',
   'nav.people': 'Pessoas',
@@ -819,12 +828,12 @@ export const pt: Record<StringKey, string> = {
     'Adicione o seu gato (ou cão, ou quem quer que seja) para começar a registar a saúde, as consultas e tudo o resto.',
   'requirePet.action': 'Adicionar o primeiro animal',
 
-  // --- página de recursos ----------------------------------------------------
+  // --- generic resource page -------------------------------------------------
   'resource.editRecord': 'Editar registo',
   'resource.deleteTitle': 'Eliminar este registo?',
   'resource.deleteMessage': '“{name}” será removido definitivamente. Esta ação não pode ser anulada.',
 
-  // --- anexos ----------------------------------------------------------------
+  // --- attachments -----------------------------------------------------------
   'attach.addFile': 'Adicionar',
   'attach.uploading': 'A carregar',
   'attach.uploadPhoto': 'Carregar foto',
@@ -832,14 +841,14 @@ export const pt: Record<StringKey, string> = {
   'attach.removeNamed': 'Remover {name}',
   'attach.noFile': 'Sem ficheiro',
 
-  // --- ligações a problemas --------------------------------------------------
+  // --- issue links -----------------------------------------------------------
   'issueLinks.none': 'Ainda não há problemas de saúde registados — adicione um no {link}.',
   'issueLinks.healthMap': 'mapa de saúde',
 
-  // --- seletor de contactos --------------------------------------------------
+  // --- contacts select -------------------------------------------------------
   'contactSelect.placeholder': 'Não indicado',
 
-  // --- mapa corporal ---------------------------------------------------------
+  // --- body map --------------------------------------------------------------
   'body.ariaLabel': 'Mapa corporal do gato',
   'body.hoverHint': 'Passe o rato sobre uma zona para a inspecionar',
   'body.nothingRecorded': 'nada registado',
@@ -854,11 +863,10 @@ export const pt: Record<StringKey, string> = {
   'body.legendHigh': 'Alta',
   'body.legendResolved': 'Resolvido',
   'body.offDiagram': 'Problemas em aberto fora do diagrama',
-  'body.leftSide': 'Lado esquerdo',
-  'body.rightSide': 'Lado direito',
+  'body.sideKey': 'As formas a cheio são o lado esquerdo do gato; as mais claras atrás são o direito.',
   'body.organs': 'Órgãos',
 
-  // --- zonas do corpo --------------------------------------------------------
+  // --- body regions ----------------------------------------------------------
   'region.coat': 'Pelagem e pele',
   'region.head': 'Cabeça',
   'region.ear': 'Orelha',
@@ -887,7 +895,7 @@ export const pt: Record<StringKey, string> = {
   'region.general': 'Geral / corpo inteiro',
   'region.behaviour': 'Comportamento e humor',
 
-  // --- valores de listas -----------------------------------------------------
+  // --- enum labels -----------------------------------------------------------
   'enum.sex.male': 'Macho',
   'enum.sex.female': 'Fêmea',
   'enum.sex.unknown': 'Desconhecido',
@@ -900,9 +908,6 @@ export const pt: Record<StringKey, string> = {
   'enum.issueStatus.monitoring': 'Em observação',
   'enum.issueStatus.resolved': 'Resolvido',
 
-  'enum.side.left': 'Esquerdo',
-  'enum.side.right': 'Direito',
-  'enum.side.none': 'Nenhum',
 
   'enum.appointmentType.checkup': 'Consulta de rotina',
   'enum.appointmentType.vaccination': 'Vacinação',
@@ -962,7 +967,7 @@ export const pt: Record<StringKey, string> = {
   'enum.journalTag.milestone': 'Marco',
   'enum.journalTag.other': 'Outro',
 
-  // --- coleções --------------------------------------------------------------
+  // --- collection names (settings page) --------------------------------------
   'collection.pets': 'Animais',
   'collection.issues': 'Problemas',
   'collection.appointments': 'Consultas',
@@ -976,7 +981,7 @@ export const pt: Record<StringKey, string> = {
   'collection.journal': 'Diário',
   'collection.documents': 'Documentos',
 
-  // --- datas -----------------------------------------------------------------
+  // --- dates & durations -----------------------------------------------------
   'date.today': 'hoje',
   'date.tomorrow': 'amanhã',
   'date.yesterday': 'ontem',
@@ -987,7 +992,7 @@ export const pt: Record<StringKey, string> = {
   'age.months.one': '{n} mês',
   'age.months.other': '{n} meses',
 
-  // --- painel ----------------------------------------------------------------
+  // --- dashboard -------------------------------------------------------------
   'dash.hello': 'Olá, {name}',
   'dash.subtitle': 'Tudo o que precisa de atenção, num só sítio.',
   'dash.neutered': 'Castrado',
@@ -1034,7 +1039,7 @@ export const pt: Record<StringKey, string> = {
   'dash.activityJournal': 'Entrada no diário',
   'dash.activityIssue': 'Problema detetado — {title}',
 
-  // --- mapa de saúde ---------------------------------------------------------
+  // --- health map ------------------------------------------------------------
   'health.title': 'Mapa de saúde',
   'health.subtitle.one':
     '{n} problema em aberto para {name}. Clique numa zona do corpo para filtrar ou para registar algo novo aí.',
@@ -1046,9 +1051,6 @@ export const pt: Record<StringKey, string> = {
   'health.filterAll': 'Todos',
   'health.clearFilter': 'Limpar filtro de zona do corpo',
   'health.addIssueHere': 'Adicionar problema aqui',
-  'health.legHint': 'As patas do lado próximo estão a cheio; as esbatidas atrás pertencem ao lado {side}.',
-  'health.legHintLeft': 'esquerdo',
-  'health.legHintRight': 'direito',
   'health.emptySelectedTitle': 'Nada registado nesta zona',
   'health.emptyTitle': 'Sem problemas a mostrar',
   'health.emptySelectedMessage': '{part} não tem problemas.',
@@ -1061,7 +1063,7 @@ export const pt: Record<StringKey, string> = {
   'health.updatesCount.other': '{n} atualizações · última {when}',
   'health.noUpdates': 'Ainda sem atualizações',
 
-  // --- editor de problemas ---------------------------------------------------
+  // --- issue editor ----------------------------------------------------------
   'issueEditor.editTitle': 'Editar problema de saúde',
   'issueEditor.newTitle': 'Novo problema de saúde',
   'issueEditor.saveIssue': 'Guardar problema',
@@ -1081,7 +1083,7 @@ export const pt: Record<StringKey, string> = {
   'issueEditor.diagnosisHint': 'Preencha assim que o veterinário disser o que é.',
   'issueEditor.photosFiles': 'Fotografias e ficheiros',
 
-  // --- detalhe do problema ---------------------------------------------------
+  // --- issue detail ----------------------------------------------------------
   'issueDetail.notFound': 'Problema não encontrado',
   'issueDetail.notFoundMessage': 'Pode ter sido eliminado.',
   'issueDetail.backToMap': 'Voltar ao mapa de saúde',
@@ -1105,7 +1107,7 @@ export const pt: Record<StringKey, string> = {
   'issueDetail.removeUpdateTitle': 'Remover esta atualização?',
   'issueDetail.removeUpdateMessage': 'A nota de evolução será eliminada da cronologia.',
 
-  // --- consultas -------------------------------------------------------------
+  // --- appointments ----------------------------------------------------------
   'appt.title': 'Consultas',
   'appt.subtitle': 'Todas as visitas — o motivo, o resultado e quanto custou.',
   'appt.add': 'Adicionar consulta',
@@ -1134,7 +1136,7 @@ export const pt: Record<StringKey, string> = {
   'appt.dietChangeHint': 'Só se o veterinário tiver mudado a dieta.',
   'appt.attachmentsHint': 'Faturas, análises, radiografias.',
 
-  // --- vacinas ---------------------------------------------------------------
+  // --- vaccinations ----------------------------------------------------------
   'vax.title': 'Vacinas',
   'vax.subtitle': 'O que foi administrado, quando, e quando é a próxima.',
   'vax.add': 'Adicionar vacina',
@@ -1154,7 +1156,7 @@ export const pt: Record<StringKey, string> = {
   'vax.vaccinePlaceholder': 'Raiva',
   'vax.attachmentsHint': 'Foto da página do boletim, certificado, recibo…',
 
-  // --- medicação -------------------------------------------------------------
+  // --- medications -----------------------------------------------------------
   'med.title': 'Medicação',
   'med.subtitle': 'O que está a tomar, quanto, e se a dose de hoje já foi dada.',
   'med.add': 'Adicionar medicamento',
@@ -1183,7 +1185,7 @@ export const pt: Record<StringKey, string> = {
   'med.whatFor': 'Para que serve',
   'med.doseLog': 'Registo de doses ({n})',
 
-  // --- desparasitação --------------------------------------------------------
+  // --- deworming -------------------------------------------------------------
   'deworm.title': 'Desparasitação',
   'deworm.subtitle': 'O que foi dado, quando, e quando é a próxima.',
   'deworm.add': 'Adicionar desparasitação',
@@ -1202,7 +1204,7 @@ export const pt: Record<StringKey, string> = {
   'deworm.overdue': 'Em atraso · {when}',
   'deworm.supersededHint': 'Já foi feita uma desparasitação mais recente.',
 
-  // --- alimentação -----------------------------------------------------------
+  // --- food ------------------------------------------------------------------
   'food.title': 'Alimentação',
   'food.subtitle': 'O que come agora, o que comia antes, e como correu.',
   'food.add': 'Adicionar alimento',
@@ -1236,8 +1238,25 @@ export const pt: Record<StringKey, string> = {
   'food.tolerance': 'Tolerância / reação',
   'food.toleranceHint': 'Vómitos, comichão, recusa — algo que valha a pena lembrar antes de comprar outra vez.',
   'food.attachmentsHint': 'Foto do rótulo ou da lista de ingredientes.',
+  'food.packSizeHint':
+    'O que vem numa embalagem: saco de 1,5 kg, lata de 195 g, caixa de 30 saquetas. O preço vem das compras abaixo.',
+  'food.lastBought': 'Comprado',
+  'food.previousPrice': 'Quanto custava uma embalagem da vez anterior',
+  'food.packs.one': '{n} embalagem',
+  'food.packs.other': '{n} embalagens',
+  'food.purchases': 'Compras',
+  'food.purchasesHint':
+    'Uma linha por cada ida às compras. O preço mais recente é o que aparece na tabela, por isso um saco que subiu só precisa de ser escrito uma vez.',
+  'food.noPurchases': 'Ainda sem compras — adicione uma linha por cada saco, lata ou caixa que trouxe para casa.',
+  'food.addPurchase': 'Adicionar linha',
+  'food.purchaseDate': 'Comprado a',
+  'food.purchaseQty': 'Embalagens',
+  'food.purchasePrice': 'Preço/emb. (€)',
+  'food.purchaseTotal': 'Total',
+  'food.purchasePlace': 'Onde',
+  'food.purchasePlacePlaceholder': 'Zooplus, Continente…',
 
-  // --- embalagem e preço por unidade (alimentação e produtos) ------------------
+  // --- packaging & unit price (food and products) ------------------------------
   'pack.priceColumn': 'Preço',
   'pack.size': 'Tamanho da embalagem',
   'pack.sizeHint': 'O que vem numa embalagem: saco de 1,5 kg, lata de 195 g, caixa de 30 saquetas.',
@@ -1248,7 +1267,7 @@ export const pt: Record<StringKey, string> = {
   'pack.perLitre': '{price}/L',
   'pack.perItem': '{price}/un.',
 
-  // --- produtos ----------------------------------------------------------------
+  // --- products ----------------------------------------------------------------
   'supply.title': 'Produtos',
   'supply.subtitle': 'Tudo o resto que se compra para ele: protetor solar, champô, areia, uma escova.',
   'supply.add': 'Adicionar produto',
@@ -1268,7 +1287,7 @@ export const pt: Record<StringKey, string> = {
   'supply.issuesHint': 'Comprado por causa de um problema? Ligue-os e a relação fica visível dos dois lados.',
   'supply.attachmentsHint': 'Foto do rótulo, ou do recibo.',
 
-  // --- peso ------------------------------------------------------------------
+  // --- weight ----------------------------------------------------------------
   'weight.title': 'Peso',
   'weight.subtitleTrend': 'Atualmente {kg} kg, registado a {date}.',
   'weight.subtitle': 'Pesagens ao longo do tempo — o primeiro sinal de que algo não está bem.',
@@ -1284,14 +1303,14 @@ export const pt: Record<StringKey, string> = {
   'weight.notesPlaceholder': 'Pesado na clínica',
   'weight.fromAppointment': 'Da consulta',
 
-  // --- registos ligados ------------------------------------------------------
+  // --- linked records --------------------------------------------------------
   'link.create': 'Adicionar',
   'link.addMedication': 'Nova medicação',
   'link.addFood': 'Novo alimento',
   'link.noMedications': 'Ainda não há medicação registada — adicione a primeira abaixo.',
   'link.noFoods': 'Ainda não há alimentação registada — adicione a primeira abaixo.',
 
-  // --- diário ----------------------------------------------------------------
+  // --- journal ---------------------------------------------------------------
   'journal.title': 'Diário',
   'journal.subtitle':
     'Tudo o que não cabe num formulário: comportamento, caixa de areia, sono, uma foto de um bom dia.',
@@ -1304,7 +1323,7 @@ export const pt: Record<StringKey, string> = {
   'journal.titlePlaceholder': 'Recusou o pequeno-almoço',
   'journal.whatHappened': 'O que aconteceu',
 
-  // --- documentos ------------------------------------------------------------
+  // --- documents -------------------------------------------------------------
   'doc.title': 'Documentos',
   'doc.subtitle':
     'Papelada que não está ligada a uma consulta — passaportes, seguros, papéis de adoção.',
@@ -1320,7 +1339,7 @@ export const pt: Record<StringKey, string> = {
   'doc.suggestPassport': 'Passaporte',
   'doc.suggestInvoice': 'Fatura',
 
-  // --- cuidados e ama --------------------------------------------------------
+  // --- care & sitters --------------------------------------------------------
   'care.title': 'Cuidados e ama',
   'care.subtitle': 'Ausências, estadias em hotel, e quem fica a tomar conta enquanto está fora.',
   'care.add': 'Adicionar período',
@@ -1342,7 +1361,7 @@ export const pt: Record<StringKey, string> = {
   'care.instructionsPlaceholder':
     'Caixa de areia na lavandaria, limpar todos os dias.\nEsconde-se debaixo do sofá no primeiro dia — é normal.\nChave suplente com a vizinha do n.º 12.',
 
-  // --- ficha de cuidados -----------------------------------------------------
+  // --- care sheet ------------------------------------------------------------
   'sheet.back': 'Cuidados e ama',
   'sheet.noPeriod': 'Sem período específico',
   'sheet.heading': 'Ficha de cuidados — {name}',
@@ -1366,7 +1385,7 @@ export const pt: Record<StringKey, string> = {
   'sheet.contactsLink': 'Contactos',
   'sheet.generated': 'Gerado pelo Purrfolio a {date}.',
 
-  // --- contactos -------------------------------------------------------------
+  // --- contacts --------------------------------------------------------------
   'contacts.title': 'Contactos',
   'contacts.subtitle':
     'Veterinários, clínicas, amas e quem mais possa ser preciso à pressa. Partilhados por todos os animais.',
@@ -1384,7 +1403,7 @@ export const pt: Record<StringKey, string> = {
   'contacts.hoursPlaceholder': 'Seg–Sex 9–19, Sáb 9–13',
   'contacts.address': 'Morada',
 
-  // --- animais ---------------------------------------------------------------
+  // --- pets ------------------------------------------------------------------
   'pets.title': 'Animais',
   'pets.subtitle': 'Todos aqueles de quem guarda registos.',
   'pets.add': 'Adicionar animal',
@@ -1421,7 +1440,7 @@ export const pt: Record<StringKey, string> = {
   'pets.neuteredLabel': 'Castrado / esterilizado',
   'pets.archivedLabel': 'Arquivado (esconder do seletor de animais)',
 
-  // --- custos ----------------------------------------------------------------
+  // --- costs -----------------------------------------------------------------
   'costs.title': 'Custos',
   'costs.subtitle': 'Quanto custa o seu animal ao longo do ano, e em quê.',
   'costs.emptyTitle': 'Ainda não há custos registados',
@@ -1437,7 +1456,7 @@ export const pt: Record<StringKey, string> = {
   'costs.share': 'Peso',
   'costs.total': 'Total',
 
-  // --- definições ------------------------------------------------------------
+  // --- settings --------------------------------------------------------------
   'settings.title': 'Definições',
   'settings.subtitle': 'Os seus dados estão em data/data.json, dentro da pasta do projeto.',
   'settings.language': 'Idioma',

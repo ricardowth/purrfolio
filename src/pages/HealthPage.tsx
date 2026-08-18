@@ -60,7 +60,6 @@ export default function HealthPage() {
   const { t, tn } = i18n;
   const issues = forPet('issues');
 
-  const [viewSide, setViewSide] = useState<'left' | 'right'>('left');
   const [showInternal, setShowInternal] = useState(false);
   const [selected, setSelected] = useState<PartSelection | null>(null);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('open');
@@ -101,22 +100,7 @@ export default function HealthPage() {
 
       <div className="grid gap-6 lg:grid-cols-5">
         <div className="card p-4 lg:col-span-2">
-          <div className="mb-3 flex items-center justify-between gap-2">
-            <div className="inline-flex overflow-hidden rounded-lg border border-stone-300 text-xs dark:border-stone-700">
-              {(['left', 'right'] as const).map((side) => (
-                <button
-                  key={side}
-                  type="button"
-                  onClick={() => setViewSide(side)}
-                  className={cx(
-                    'cursor-pointer px-3 py-1.5 font-medium transition-colors',
-                    viewSide === side ? 'bg-amber-600 text-white' : 'bg-white text-stone-600 dark:bg-stone-900 dark:text-stone-400',
-                  )}
-                >
-                  {side === 'left' ? t('body.leftSide') : t('body.rightSide')}
-                </button>
-              ))}
-            </div>
+          <div className="mb-3 flex items-center justify-end">
             <button
               type="button"
               onClick={() => setShowInternal((prev) => !prev)}
@@ -128,7 +112,6 @@ export default function HealthPage() {
 
           <CatBody
             issues={issues}
-            viewSide={viewSide}
             showInternal={showInternal}
             selected={selected ? [selected] : null}
             showOffDiagram
@@ -140,12 +123,6 @@ export default function HealthPage() {
           <div className="mt-3 border-t border-stone-200 pt-3 dark:border-stone-800">
             <SeverityLegend />
           </div>
-
-          <p className="mt-3 text-center text-xs text-stone-400">
-            {t('health.legHint', {
-              side: viewSide === 'left' ? t('health.legHintRight') : t('health.legHintLeft'),
-            })}
-          </p>
         </div>
 
         <div className="lg:col-span-3">

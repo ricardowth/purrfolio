@@ -36,7 +36,17 @@ interface PartState {
 const EMPTY_STATE: PartState = { worstActive: null, activeCount: 0, resolvedCount: 0 };
 
 const keyOf = (bodyPart: string, side: Side) => `${bodyPart}|${side}`;
-const opposite = (side: 'left' | 'right') => (side === 'left' ? 'right' : 'left');
+
+/**
+ * Which side of the cat a shape stands for. Fixed, not a point of view: the
+ * near shapes are the cat's left, the shapes drawn behind and faded are its
+ * right. Both are always on screen, so nothing has to be turned around to see
+ * that an ear infection is in both ears.
+ */
+const sideFor = (region: Region, shape: Shape): Side => {
+  if (!region.sided) return 'none';
+  return shape.layer === 'far' ? 'right' : 'left';
+};
 
 /**
  * Roll the pet's issues up into per-part severity, keyed by part + side. An
@@ -79,7 +89,6 @@ function ShapeEl({ shape, ...props }: { shape: Shape } & React.SVGProps<SVGPathE
 
 interface CatBodyProps {
   issues: Issue[];
-  viewSide: 'left' | 'right';
   showInternal: boolean;
   /** Zones drawn as picked — one while filtering, several while editing an issue. */
   selected?: PartSelection[] | null;
@@ -93,17 +102,11 @@ interface CatBodyProps {
   showOffDiagram?: boolean;
 }
 
-export function CatBody({ issues, viewSide, showInternal, selected, onSelect, className, showOffDiagram }: CatBodyProps) {
+export function CatBody({ issues, showInternal, selected, onSelect, className, showOffDiagram }: CatBodyProps) {
   const i18n = useI18n();
   const { t, tn } = i18n;
   const states = useMemo(() => summarise(issues), [issues]);
   const [hovered, setHovered] = useState<PartSelection | null>(null);
-
-  /** Which side a given shape represents, given which side of the cat we're looking at. */
-  const sideFor = (region: Region, shape: Shape): Side => {
-    if (!region.sided) return 'none';
-    return shape.layer === 'far' ? opposite(viewSide) : viewSide;
-  };
 
   const limbs = REGIONS.filter((region) => region.group === 'limbs');
   const overlays = REGIONS.filter((region) => region.shapes.length > 0 && (showInternal || !region.internal));
@@ -132,10 +135,16 @@ export function CatBody({ issues, viewSide, showInternal, selected, onSelect, cl
 
     const stroke = isSelected ? '#b45309' : state.worstActive ? fill : state.resolvedCount > 0 ? RESOLVED_COLOUR : 'currentColor';
 
+    // Far limbs are already inside a faded group; the far ear and eye are
+    // painted on top and carry their own fade, so the cat's right-hand side
+    // reads as the lighter one wherever it appears.
+    const farFade = shape.layer === 'far' && region.group !== 'limbs' ? 0.7 : undefined;
+
     return (
       <ShapeEl
         key={`${region.id}-${index}`}
         shape={shape}
+        opacity={farFade}
         fill={fill === 'transparent' && isHovered ? '#f59e0b' : fill}
         fillOpacity={fillOpacity}
         stroke={stroke}
@@ -203,7 +212,12 @@ export function CatBody({ issues, viewSide, showInternal, selected, onSelect, cl
             .filter((region) => !region.internal)
             .map((region) => (
               <Fragment key={region.id}>
-                {region.shapes.filter((shape) => shape.layer !== 'far').map((shape, index) => renderOverlay(region, shape, index))}
+                {region.shapes
+                  // The far limbs were painted behind the body in the first
+                  // pass. Every other far shape belongs on top, or it would be
+                  // swallowed by the silhouette and could never be clicked.
+                  .filter((shape) => shape.layer !== 'far' || region.group !== 'limbs')
+                  .map((shape, index) => renderOverlay(region, shape, index))}
               </Fragment>
             ))}
         </g>
@@ -230,6 +244,9 @@ export function CatBody({ issues, viewSide, showInternal, selected, onSelect, cl
           <span className="text-stone-400 dark:text-stone-500">{t('body.hoverHint')}</span>
         )}
       </p>
+
+      {/* The map never turns around, so it says once which side is which. */}
+      <p className="text-center text-[11px] text-stone-400 dark:text-stone-500">{t('body.sideKey')}</p>
 
       {offDiagram.length > 0 && (
         <div className="mt-2 rounded-lg border border-dashed border-stone-300 px-3 py-2 dark:border-stone-700">

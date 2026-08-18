@@ -57,7 +57,6 @@ export function IssueEditor({
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [viewSide, setViewSide] = useState<'left' | 'right'>(initialPart?.side === 'right' ? 'right' : 'left');
   const [showInternal, setShowInternal] = useState(false);
 
   // Reset the form each time the modal is opened.
@@ -67,8 +66,6 @@ export function IssueEditor({
     setValues(issue ? stripMeta(issue) : blank(petId, initialPart));
     setErrors({});
     setFormError(null);
-    const sided = parts.find((part) => part.side === 'left' || part.side === 'right');
-    if (sided) setViewSide(sided.side as 'left' | 'right');
     setShowInternal(parts.some((part) => REGIONS_BY_ID.get(part.bodyPart)?.internal));
   }, [open, issue, initialPart, petId]);
 
@@ -83,9 +80,6 @@ export function IssueEditor({
       return;
     }
     set({ parts: [...values.parts, selection] });
-    // Turning the cat around mid-pick is disorienting once a zone is already
-    // marked, so only the first pick swings the view to the side it is on.
-    if (values.parts.length === 0 && (selection.side === 'left' || selection.side === 'right')) setViewSide(selection.side);
   }
 
   /**
@@ -139,22 +133,7 @@ export function IssueEditor({
       <div className="grid gap-6 md:grid-cols-2">
         <div>
           <span className="label">{t('issueEditor.where')}</span>
-          <div className="mb-2 flex items-center justify-between gap-2">
-            <div className="inline-flex overflow-hidden rounded-lg border border-stone-300 text-xs dark:border-stone-700">
-              {(['left', 'right'] as const).map((side) => (
-                <button
-                  key={side}
-                  type="button"
-                  onClick={() => setViewSide(side)}
-                  className={cx(
-                    'cursor-pointer px-3 py-1.5 font-medium',
-                    viewSide === side ? 'bg-amber-600 text-white' : 'bg-white text-stone-600 dark:bg-stone-900 dark:text-stone-400',
-                  )}
-                >
-                  {side === 'left' ? t('body.leftSide') : t('body.rightSide')}
-                </button>
-              ))}
-            </div>
+          <div className="mb-2 flex items-center justify-end">
             <button
               type="button"
               onClick={() => setShowInternal((prev) => !prev)}
@@ -166,7 +145,6 @@ export function IssueEditor({
 
           <CatBody
             issues={issues.filter((item) => item.id !== issue?.id)}
-            viewSide={viewSide}
             showInternal={showInternal}
             selected={values.parts}
             onSelect={togglePart}

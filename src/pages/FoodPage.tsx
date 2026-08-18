@@ -2,11 +2,11 @@ import { Soup, Star } from 'lucide-react';
 import { useData } from '@/store/DataContext';
 import { ResourcePage, type Column } from '@/components/ResourcePage';
 import { AttachmentField } from '@/components/AttachmentField';
-import { PackFields, PackPriceCell } from '@/components/Packaging';
-import { Badge, Checkbox, Field, Select, type Tone } from '@/components/ui';
+import { PackPriceCell, PackSizeField, PurchaseTable } from '@/components/Packaging';
+import { Badge, Checkbox, Field, Select, cx, type Tone } from '@/components/ui';
 import { useI18n } from '@/lib/i18n';
 import { today, useFormat } from '@/lib/format';
-import { foodGroup } from '@/lib/derive';
+import { foodGroup, priceChange, pricedPack, purchaseTotals, sortedPurchases } from '@/lib/derive';
 import { numberOrNull, numberValue, stripMeta, type FormValues } from '@/lib/forms';
 import { FOOD_TYPES } from '@shared/schema.js';
 import type { Food } from '@shared/types';
@@ -35,6 +35,42 @@ function Stars({ rating }: { rating: number | null }) {
   );
 }
 
+/**
+ * The buying history in one cell: when the last bag came home, how much has
+ * been bought in total, and — since prices move — whether the last one cost
+ * more or less than the one before it.
+ */
+function BoughtCell({ food }: { food: Food }) {
+  const { t, tn } = useI18n();
+  const { formatDate, formatMoney } = useFormat();
+
+  const last = sortedPurchases(food.purchases)[0];
+  if (!last) return <span className="text-stone-400">—</span>;
+
+  const totals = purchaseTotals(food.purchases);
+  const change = priceChange(food.purchases);
+
+  return (
+    <div>
+      <p className="font-medium text-stone-900 dark:text-stone-100">{formatDate(last.date)}</p>
+      <p className="text-xs text-stone-500">
+        {tn('food.packs', totals.packs)} · {formatMoney(totals.spent)}
+      </p>
+      {change && (
+        <p
+          title={t('food.previousPrice')}
+          className={cx(
+            'text-xs font-medium',
+            change.to > change.from ? 'text-red-600 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-400',
+          )}
+        >
+          {change.to > change.from ? '↑' : '↓'} {formatMoney(change.from)}
+        </p>
+      )}
+    </div>
+  );
+}
+
 export default function FoodPage() {
   const { petId, forPet } = useData();
   const { t, tEnum } = useI18n();
@@ -54,14 +90,18 @@ export default function FoodPage() {
     current: true,
     packSize: null,
     packUnit: 'kg',
-    cost: null,
+    purchases: [],
     rating: null,
     tolerance: '',
     notes: '',
     attachments: [],
   });
 
-  const priceColumn: Column<Food> = { header: t('pack.priceColumn'), render: (row) => <PackPriceCell item={row} /> };
+  // Priced off the newest purchase, so the table follows the receipts rather
+  // than a figure typed in once when the food was first added.
+  const priceColumn: Column<Food> = { header: t('pack.priceColumn'), render: (row) => <PackPriceCell item={pricedPack(row)} /> };
+
+  const boughtColumn: Column<Food> = { header: t('food.lastBought'), render: (row) => <BoughtCell food={row} /> };
 
   const nameColumn = (header: string): Column<Food> => ({
     header,
@@ -104,6 +144,7 @@ export default function FoodPage() {
       describe={(row) => [row.brand, row.product].filter(Boolean).join(' ')}
       defaults={blank}
       toValues={stripMeta}
+      wideModal
       // Two tables, because the two shelves are priced differently: the everyday
       // bags and tins compare by the kilo, treats by the item.
       sections={[
@@ -116,6 +157,7 @@ export default function FoodPage() {
             { header: t('common.type'), render: (row) => <Badge tone={TYPE_TONE[row.type]}>{tEnum('foodType', row.type)}</Badge> },
             amountColumn,
             priceColumn,
+            boughtColumn,
             ...statusColumns,
           ],
         },
@@ -123,7 +165,7 @@ export default function FoodPage() {
           title: t('food.snacksSection'),
           emptyMessage: t('food.noSnacks'),
           rows: rows.filter((row) => foodGroup(row) === 'snack'),
-          columns: [nameColumn(t('food.snack')), amountColumn, priceColumn, ...statusColumns],
+          columns: [nameColumn(t('food.snack')), amountColumn, priceColumn, boughtColumn, ...statusColumns],
         },
       ]}
       renderForm={({ values, set, errors }) => (
@@ -176,7 +218,7 @@ export default function FoodPage() {
                 onChange={(e) => set({ timesPerDay: numberOrNull(e.target.value) })}
               />
             </Field>
-            <PackFields values={values} set={set} />
+            <PackSizeField values={values} set={set} hint={t('food.packSizeHint')} />
             <Field label={t('food.started')}>
               <input type="date" className="input" value={values.startDate} onChange={(e) => set({ startDate: e.target.value })} />
             </Field>
@@ -196,6 +238,8 @@ export default function FoodPage() {
           </div>
 
           <Checkbox label={t('food.currentlyFeeding')} checked={values.current} onChange={(current) => set({ current })} />
+
+          <PurchaseTable purchases={values.purchases} pack={values} onChange={(purchases) => set({ purchases })} />
 
           <Field label={t('food.tolerance')} hint={t('food.toleranceHint')}>
             <textarea className="input min-h-16" value={values.tolerance} onChange={(e) => set({ tolerance: e.target.value })} />

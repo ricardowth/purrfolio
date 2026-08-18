@@ -41,9 +41,9 @@ export const byDateDesc =
 // --- locale-aware formatters -----------------------------------------------
 
 export interface Formatters {
-  /** 'YYYY-MM-DD' or an ISO timestamp -> '14 ago 2026'. Blank input gives an em dash. */
+  /** 'YYYY-MM-DD' or an ISO timestamp -> '14 ago 2026' in Portuguese. Blank input gives an em dash. */
   formatDate: (value?: string | null) => string;
-  /** 'YYYY-MM' -> 'outubro 2026', for things scheduled to a month. */
+  /** 'YYYY-MM' -> 'outubro 2026' in Portuguese, for things scheduled to a month. */
   formatMonth: (value?: string | null) => string;
   formatDateTime: (value?: string | null) => string;
   formatMoney: (value?: number | null) => string;
@@ -51,7 +51,7 @@ export interface Formatters {
   formatNumber: (value?: number | null) => string;
   /** '3 days ago', 'in 2 weeks', 'today'. */
   relativeDays: (value?: string | null) => string;
-  /** Human age from a birth date, e.g. '3 anos, 2 meses'. */
+  /** Human age from a birth date, e.g. '3 anos, 2 meses' in Portuguese. */
   formatAge: (birthDate?: string | null) => string;
 }
 
